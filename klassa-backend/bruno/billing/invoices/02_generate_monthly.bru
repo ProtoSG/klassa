@@ -1,0 +1,27 @@
+meta {
+  name: Generate Monthly Invoices
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/billing/invoices/generate-monthly
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+body:json {
+  {
+    "academicYearId": 1,
+    "feeScheduleId": 1,
+    "dueDate": "2026-03-10"
+  }
+}

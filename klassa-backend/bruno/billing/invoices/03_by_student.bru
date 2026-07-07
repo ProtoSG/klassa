@@ -1,0 +1,23 @@
+meta {
+  name: Get Invoices by Student
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/billing/invoices/student/{{student_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+params:query {
+  ~status: PENDING
+}

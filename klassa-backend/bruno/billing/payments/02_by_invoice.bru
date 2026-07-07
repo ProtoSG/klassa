@@ -1,0 +1,19 @@
+meta {
+  name: Get Payments by Invoice
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/billing/payments/invoice/{{invoice_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}

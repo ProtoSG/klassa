@@ -1,0 +1,19 @@
+meta {
+  name: Cancel Invoice
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/billing/invoices/{{invoice_id}}/cancel
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}

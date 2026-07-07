@@ -1,0 +1,19 @@
+meta {
+  name: Get Student Balance
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/billing/invoices/student/{{student_id}}/balance
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Get Invoice
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/billing/invoices/{{invoice_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}

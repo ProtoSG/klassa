@@ -1,0 +1,29 @@
+meta {
+  name: Create Invoice
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/billing/invoices
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+body:json {
+  {
+    "studentId": 1,
+    "feeScheduleId": 1,
+    "concept": "Mensualidad Marzo 2026",
+    "amount": 350.00,
+    "dueDate": "2026-03-10"
+  }
+}

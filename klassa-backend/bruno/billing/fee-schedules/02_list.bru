@@ -1,0 +1,23 @@
+meta {
+  name: List Fee Schedules
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/billing/fee-schedules
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+params:query {
+  academicYearId: {{academic_year_id}}
+}

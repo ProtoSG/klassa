@@ -1,0 +1,19 @@
+meta {
+  name: Delete Fee Schedule
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{base_url}}/billing/fee-schedules/{{fee_schedule_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
