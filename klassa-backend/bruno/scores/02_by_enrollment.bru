@@ -1,0 +1,23 @@
+meta {
+  name: Get Scores by Enrollment
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/scores/enrollment/{{enrollment_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+params:query {
+  ~period: 1
+}

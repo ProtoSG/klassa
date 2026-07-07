@@ -1,0 +1,19 @@
+meta {
+  name: Get Enrollments by Student
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/enrollments/student/{{student_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}

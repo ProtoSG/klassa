@@ -1,0 +1,19 @@
+meta {
+  name: Get Enrollments by Section
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/enrollments/section/{{section_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}

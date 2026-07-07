@@ -1,0 +1,23 @@
+meta {
+  name: Transfer Enrollment
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/enrollments/{{enrollment_id}}/transfer
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+params:query {
+  newSectionId: 2
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Get Enrollment Average
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/scores/enrollment/{{enrollment_id}}/average
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Update Grade Level
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{base_url}}/grade-levels/{{grade_level_id}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+body:json {
+  {
+    "name": "Primer Grado",
+    "level": "PRIMARY",
+    "sortOrder": 1
+  }
+}

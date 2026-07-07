@@ -1,0 +1,19 @@
+meta {
+  name: Activate Academic Year
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/academic-years/{{academic_year_id}}/activate
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}

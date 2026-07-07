@@ -1,0 +1,19 @@
+meta {
+  name: Get Academic Year
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/academic-years/{{academic_year_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}

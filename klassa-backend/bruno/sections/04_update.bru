@@ -1,0 +1,29 @@
+meta {
+  name: Update Section
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{base_url}}/sections/{{section_id}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+body:json {
+  {
+    "name": "A",
+    "gradeLevelId": 1,
+    "academicYearId": 1,
+    "homeroomTeacherId": 1,
+    "maxCapacity": 30
+  }
+}

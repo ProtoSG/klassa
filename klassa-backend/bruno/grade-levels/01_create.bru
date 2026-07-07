@@ -1,0 +1,27 @@
+meta {
+  name: Create Grade Level
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/grade-levels
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+body:json {
+  {
+    "name": "Primer Grado",
+    "level": "PRIMARY",
+    "sortOrder": 1
+  }
+}

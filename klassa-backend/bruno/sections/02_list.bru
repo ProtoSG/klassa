@@ -1,0 +1,23 @@
+meta {
+  name: List Sections
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/sections
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+params:query {
+  academicYearId: {{academic_year_id}}
+}

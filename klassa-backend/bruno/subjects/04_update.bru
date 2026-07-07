@@ -1,0 +1,27 @@
+meta {
+  name: Update Subject
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{base_url}}/subjects/{{subject_id}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+body:json {
+  {
+    "name": "Matemáticas",
+    "gradeLevelId": 1,
+    "hoursPerWeek": 5
+  }
+}

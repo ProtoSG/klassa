@@ -1,0 +1,19 @@
+meta {
+  name: List Grade Levels Grouped
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/grade-levels/grouped
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}

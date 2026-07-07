@@ -1,0 +1,19 @@
+meta {
+  name: Get Grade Level
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/grade-levels/{{grade_level_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}

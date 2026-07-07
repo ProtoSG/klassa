@@ -1,0 +1,23 @@
+meta {
+  name: List Subjects
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/subjects
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+params:query {
+  ~gradeLevelId: {{grade_level_id}}
+}

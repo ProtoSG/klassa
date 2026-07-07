@@ -1,0 +1,29 @@
+meta {
+  name: Create Section
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/sections
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+body:json {
+  {
+    "name": "A",
+    "gradeLevelId": 1,
+    "academicYearId": 1,
+    "homeroomTeacherId": 1,
+    "maxCapacity": 30
+  }
+}

@@ -1,0 +1,28 @@
+meta {
+  name: Create Score
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/scores
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+body:json {
+  {
+    "enrollmentId": 1,
+    "subjectId": 1,
+    "period": 1,
+    "score": 18.5
+  }
+}
