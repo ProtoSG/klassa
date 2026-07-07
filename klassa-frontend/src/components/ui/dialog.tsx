@@ -1,0 +1,2 @@
+/* Dialog — unused, stubbed */
+export {}
