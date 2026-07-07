@@ -1,0 +1,15 @@
+meta {
+  name: Get Tenant
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/tenants/{{subdomain}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

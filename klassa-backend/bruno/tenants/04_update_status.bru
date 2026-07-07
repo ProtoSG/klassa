@@ -1,0 +1,19 @@
+meta {
+  name: Update Tenant Status
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{base_url}}/tenants/{{subdomain}}/status
+  body: none
+  auth: bearer
+}
+
+params:query {
+  status: ACTIVE
+}
+
+auth:bearer {
+  token: {{token}}
+}
