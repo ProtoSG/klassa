@@ -1,0 +1,24 @@
+meta {
+  name: Get Attendance by Enrollment
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/attendance/enrollment/{{enrollment_id}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+params:query {
+  ~start: 2026-03-01
+  ~end: 2026-06-30
+}

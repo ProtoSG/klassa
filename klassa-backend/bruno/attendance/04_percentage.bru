@@ -1,0 +1,24 @@
+meta {
+  name: Get Attendance Percentage
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/attendance/enrollment/{{enrollment_id}}/percentage
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+params:query {
+  start: 2026-03-01
+  end: 2026-06-30
+}

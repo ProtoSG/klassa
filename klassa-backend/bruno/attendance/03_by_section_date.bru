@@ -1,0 +1,19 @@
+meta {
+  name: Get Attendance by Section and Date
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/attendance/section/{{section_id}}/date/2026-03-15
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
