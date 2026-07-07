@@ -1,0 +1,32 @@
+meta {
+  name: Create Tenant (Platform Admin)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/tenants
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "subdomain": "colegio-demo",
+    "name": "Colegio Demo",
+    "planId": 1,
+    "trialDays": 30,
+    "adminEmail": "director@colegio-demo.com",
+    "adminFirstName": "Juan",
+    "adminLastName": "Rodriguez"
+  }
+}
+
+docs {
+  Response includes `tempPassword` — show once, send to client.
+  Client must change password on first login (POST /api/auth/change-password).
+}

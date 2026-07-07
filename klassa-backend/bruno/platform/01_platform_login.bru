@@ -1,0 +1,18 @@
+meta {
+  name: Platform Login
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/platform/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "admin@klassa.com",
+    "password": "~6%9AX^@y#lyXa*H"
+  }
+}
