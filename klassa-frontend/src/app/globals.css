@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-accent: rgb(216, 249, 184);
+  --color-canvas: rgb(243, 242, 241);
+  --color-surface: rgb(247, 247, 247);
+  --color-muted-fill: rgb(242, 242, 242);
+  --color-ink: rgb(43, 45, 45);
+  --color-prose: rgb(102, 102, 102);
+  --color-ghost: rgb(140, 140, 140);
+  --color-line: rgb(230, 230, 230);
+  --color-trim: rgb(216, 213, 209);
+  --color-background: rgb(243, 242, 241);
+  --color-foreground: rgb(43, 45, 45);
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  33% { transform: translateY(-8px) rotate(2deg); }
+  66% { transform: translateY(-4px) rotate(-2deg); }
+}
+
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: scale(0.96) translateY(4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Container transform — mobile menu expands from hamburger corner */
+@keyframes menu-ct-expand {
+  from { opacity: 0; transform: scale(0.3); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes menu-ct-collapse {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.3); }
+}
+@keyframes menu-ct-content {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    scroll-behavior: smooth;
+    /* clear fixed nav (top-5 + ~3rem height) when jumping to a section */
+    scroll-padding-top: 6rem;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+  body {
+    background-color: rgb(243, 242, 241);
+    color: rgb(43, 45, 45);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  * {
+    box-sizing: border-box;
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  .animate-ticker {
+    animation: ticker 30s linear infinite;
+  }
+  .animate-ticker-slow {
+    animation: ticker 60s linear infinite;
+  }
+  .shadow-card {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  }
+  .shadow-hover {
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+  }
+  .animate-dialog-in {
+    animation: dialog-in 200ms ease-out;
+  }
+  .animate-backdrop-in {
+    animation: backdrop-in 150ms ease-out;
+  }
+  .animate-menu-open {
+    transform-origin: top right;
+    animation: menu-ct-expand 0.34s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .animate-menu-close {
+    transform-origin: top right;
+    animation: menu-ct-collapse 0.24s cubic-bezier(0.4, 0, 1, 1) both;
+    pointer-events: none;
+  }
+  /* Counter content fade so text doesn't read distorted while box scales */
+  .animate-menu-open > * {
+    animation: menu-ct-content 0.34s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .ticker-mask {
+    mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+  }
+}
