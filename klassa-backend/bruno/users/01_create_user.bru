@@ -1,0 +1,29 @@
+meta {
+  name: Create User
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/users
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+body:json {
+  {
+    "email": "teacher@demo.klassa.com",
+    "password": "klassa123",
+    "role": "TEACHER",
+    "firstName": "María",
+    "lastName": "García"
+  }
+}
