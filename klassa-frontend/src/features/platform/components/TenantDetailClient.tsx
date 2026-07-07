@@ -87,7 +87,7 @@ export default function TenantDetailClient({ tenant: initial, plans }: Props) {
                 onClick={() => setPending(action)}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
                   action.danger
-                    ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                    ? 'bg-danger/10 text-danger hover:bg-danger/20'
                     : 'bg-ink text-white hover:scale-[1.02] active:scale-[0.98] shadow-card'
                 }`}
               >

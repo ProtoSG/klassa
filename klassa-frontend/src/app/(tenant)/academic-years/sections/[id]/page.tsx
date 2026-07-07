@@ -50,7 +50,7 @@ export default async function SectionDetailPage({ params }: Props) {
             <span>{section.academicYearName}</span>
             <span className="text-ghost">·</span>
             <span>
-              <span className={section.activeEnrollments >= section.maxCapacity ? 'text-red-600 font-medium' : ''}>
+              <span className={section.activeEnrollments >= section.maxCapacity ? 'text-warning font-medium' : ''}>
                 {section.activeEnrollments}
               </span>
               /{section.maxCapacity} alumnos

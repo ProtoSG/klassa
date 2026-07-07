@@ -60,11 +60,11 @@ export default function PaymentHistoryDialog({ invoice, open, onClose }: Props) 
             </div>
             <div>
               <p className="text-xs text-ghost">Pagado</p>
-              <p className="text-sm font-medium text-emerald-600 mt-0.5">S/ {invoice.paidAmount}</p>
+              <p className="text-sm font-medium text-ink mt-0.5">S/ {invoice.paidAmount}</p>
             </div>
             <div>
               <p className="text-xs text-ghost">Pendiente</p>
-              <p className={`text-sm font-medium mt-0.5 ${parseFloat(invoice.pendingAmount) > 0 ? 'text-red-600' : 'text-prose'}`}>
+              <p className={`text-sm font-medium mt-0.5 ${parseFloat(invoice.pendingAmount) > 0 ? 'text-danger' : 'text-prose'}`}>
                 S/ {invoice.pendingAmount}
               </p>
             </div>
@@ -95,7 +95,7 @@ export default function PaymentHistoryDialog({ invoice, open, onClose }: Props) 
                 {payments.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="text-sm text-prose">{fmtDate(p.paymentDate)}</TableCell>
-                    <TableCell className="text-sm font-medium text-emerald-600">S/ {p.amount}</TableCell>
+                    <TableCell className="text-sm font-medium text-ink">S/ {p.amount}</TableCell>
                     <TableCell className="text-sm text-prose">{METHOD_LABEL[p.method]}</TableCell>
                     <TableCell className="text-xs text-ghost font-mono">
                       {p.receiptNumber ?? '—'}
@@ -113,7 +113,7 @@ export default function PaymentHistoryDialog({ invoice, open, onClose }: Props) 
             <p className="text-xs text-ghost">{payments.length} pagos registrados</p>
             <p className="text-sm font-medium text-ink">
               Total pagado:{' '}
-              <span className="text-emerald-600">
+              <span className="text-ink">
                 S/ {payments.reduce((sum, p) => sum + parseFloat(p.amount), 0).toFixed(2)}
               </span>
             </p>

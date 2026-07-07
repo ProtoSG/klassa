@@ -28,9 +28,9 @@ function getStatusClass(status: AttendanceStatus, isCurrent: boolean): string {
     return 'border-line bg-white text-ghost hover:text-ink hover:border-ink/30'
   }
   const map: Record<AttendanceStatus, string> = {
-    PRESENT: 'border-emerald-500 bg-emerald-500 text-white',
-    ABSENT: 'border-red-500 bg-red-500 text-white',
-    LATE: 'border-amber-500 bg-amber-500 text-white',
+    PRESENT: 'border-accent bg-accent text-ink',
+    ABSENT: 'border-danger bg-danger text-white',
+    LATE: 'border-warning bg-warning text-white',
     JUSTIFIED: 'border-blue-500 bg-blue-500 text-white',
   }
   return map[status]
@@ -188,7 +188,7 @@ export default function AttendanceClient({ sections, defaultDate }: Props) {
                 {enrollments.length} alumno{enrollments.length !== 1 ? 's' : ''}
               </p>
               {savedAt === date && (
-                <span className="text-xs text-emerald-600 font-medium">✓ Guardado</span>
+                <span className="text-xs text-ink font-medium">✓ Guardado</span>
               )}
             </div>
             <button

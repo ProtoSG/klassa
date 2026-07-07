@@ -49,7 +49,7 @@ export default function StudentsFilters() {
           <button
             key={value}
             onClick={() => update('status', value)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
               currentStatus === value
                 ? 'bg-ink text-white shadow-card'
                 : 'text-prose hover:text-ink hover:bg-white/60'

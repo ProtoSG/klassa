@@ -39,7 +39,7 @@ export default function AcademicYearTable({ years }: Props) {
               <td className="px-5 py-3">
                 {y.active ? (
                   <span className="inline-flex items-center gap-1.5 bg-accent/30 text-ink/80 px-2.5 py-0.5 rounded-full text-xs font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-ink/50"></span>
                     Activo
                   </span>
                 ) : (

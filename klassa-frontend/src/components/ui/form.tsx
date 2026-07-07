@@ -51,7 +51,7 @@ export function FormLabel({ className, ...props }: React.LabelHTMLAttributes<HTM
   return (
     <label
       htmlFor={`${id}-input`}
-      className={cn('text-sm font-medium text-ink', hasError && 'text-red-500', className)}
+      className={cn('text-sm font-medium text-ink', hasError && 'text-danger', className)}
       {...props}
     />
   )
@@ -71,6 +71,6 @@ export function FormMessage({ className, children }: React.HTMLAttributes<HTMLPa
   const body = error ? String(error?.message ?? '') : children
   if (!body) return null
   return (
-    <p className={cn('text-xs text-red-500', className)}>{body}</p>
+    <p className={cn('text-xs text-danger', className)}>{body}</p>
   )
 }

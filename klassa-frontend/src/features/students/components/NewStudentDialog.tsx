@@ -115,7 +115,7 @@ export default function NewStudentDialog() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 bg-ink text-white text-sm font-medium px-4 py-2 rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-card"
+        className="inline-flex items-center gap-1.5 bg-ink text-white text-sm font-medium px-4 py-2 rounded-xl cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-card"
       >
         + Nuevo alumno
       </button>
@@ -185,7 +185,7 @@ export default function NewStudentDialog() {
                       <button
                         type="button"
                         onClick={handlePhotoRemove}
-                        className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                        className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-danger text-white flex items-center justify-center hover:bg-danger/90 transition-colors"
                       >
                         <X size={10} />
                       </button>
@@ -218,14 +218,14 @@ export default function NewStudentDialog() {
                   )} />
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
-                  <FormField control={form.control} name="code" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Código</FormLabel>
-                      <FormControl><Input placeholder="EST-001" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                <div className="grid grid-cols-2 gap-3">
+                  {/* <FormField control={form.control} name="code" render={({ field }) => ( */}
+                  {/*   <FormItem> */}
+                  {/*     <FormLabel>Código</FormLabel> */}
+                  {/*     <FormControl><Input placeholder="EST-001" {...field} /></FormControl> */}
+                  {/*     <FormMessage /> */}
+                  {/*   </FormItem> */}
+                  {/* )} /> */}
                   <FormField control={form.control} name="birthDate" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nacimiento</FormLabel>

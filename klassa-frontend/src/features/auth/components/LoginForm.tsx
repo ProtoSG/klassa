@@ -104,7 +104,7 @@ export default function LoginForm() {
         />
 
         {form.formState.errors.root && (
-          <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+          <p className="text-sm text-danger bg-danger/10 border border-danger/30 rounded-xl px-4 py-2.5">
             {form.formState.errors.root.message}
           </p>
         )}

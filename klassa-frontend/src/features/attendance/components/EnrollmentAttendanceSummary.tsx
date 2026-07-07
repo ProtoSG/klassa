@@ -9,9 +9,9 @@ const STATUS_LABEL: Record<AttendanceStatus, string> = {
 }
 
 const STATUS_CLASS: Record<AttendanceStatus, string> = {
-  PRESENT: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  ABSENT: 'bg-red-50 text-red-700 border-red-200',
-  LATE: 'bg-amber-50 text-amber-700 border-amber-200',
+  PRESENT: 'bg-accent/30 text-ink border-accent/50',
+  ABSENT: 'bg-danger/10 text-danger border-danger/30',
+  LATE: 'bg-warning/10 text-warning border-warning/30',
   JUSTIFIED: 'bg-blue-50 text-blue-700 border-blue-200',
 }
 
@@ -39,7 +39,7 @@ export default async function EnrollmentAttendanceSummary({ enrollmentId, sectio
         {percentage && (
           <div className="flex items-center gap-3 text-xs text-ghost">
             <span>{percentage.attendedDays}/{percentage.totalDays} días</span>
-            <span className={`font-semibold text-sm ${parseFloat(percentage.percentage) >= 85 ? 'text-emerald-600' : parseFloat(percentage.percentage) >= 70 ? 'text-amber-600' : 'text-red-600'}`}>
+            <span className={`font-semibold text-sm ${parseFloat(percentage.percentage) >= 85 ? 'text-ink' : parseFloat(percentage.percentage) >= 70 ? 'text-warning' : 'text-danger'}`}>
               {percentage.percentage}%
             </span>
           </div>

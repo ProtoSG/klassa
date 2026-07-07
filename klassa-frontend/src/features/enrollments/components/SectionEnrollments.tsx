@@ -14,7 +14,7 @@ import type { EnrollmentResponse, EnrollmentStatus } from '../types'
 const STATUS_STYLE: Record<EnrollmentStatus, string> = {
   ACTIVE: 'bg-accent/30 text-ink/80',
   WITHDRAWN: 'bg-muted-fill text-prose',
-  TRANSFERRED: 'bg-amber-100 text-amber-700',
+  TRANSFERRED: 'bg-warning/15 text-warning',
 }
 
 const STATUS_LABEL: Record<EnrollmentStatus, string> = {
@@ -95,14 +95,14 @@ export default function SectionEnrollments({ initialEnrollments }: Props) {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setTransferTarget(e)}
-                        className="p-1.5 rounded-lg text-ghost hover:text-amber-600 hover:bg-amber-50 transition-colors duration-150"
+                        className="p-1.5 rounded-lg text-ghost hover:text-warning hover:bg-warning/10 transition-colors duration-150"
                         title="Trasladar"
                       >
                         <ArrowRightLeft size={14} />
                       </button>
                       <button
                         onClick={() => setWithdrawTarget(e)}
-                        className="p-1.5 rounded-lg text-ghost hover:text-red-500 hover:bg-red-50 transition-colors duration-150"
+                        className="p-1.5 rounded-lg text-ghost hover:text-danger hover:bg-danger/10 transition-colors duration-150"
                         title="Retirar"
                       >
                         <UserMinus size={14} />

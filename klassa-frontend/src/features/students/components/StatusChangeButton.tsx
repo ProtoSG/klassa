@@ -17,7 +17,7 @@ const STATUS_OPTIONS: { value: StudentStatus; label: string }[] = [
 const STATUS_STYLE: Record<StudentStatus, string> = {
   ACTIVE: 'bg-accent/40 text-ink/80',
   INACTIVE: 'bg-muted-fill text-prose',
-  TRANSFERRED: 'bg-amber-100 text-amber-700',
+  TRANSFERRED: 'bg-warning/15 text-warning',
 }
 
 interface Props {

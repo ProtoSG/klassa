@@ -63,7 +63,7 @@ function StatusActions({
           key={next}
           onClick={() => onRequest({ tenant, label, next, danger, irreversible })}
           className={`text-xs underline-offset-2 hover:underline transition-colors ${
-            danger ? 'text-red-500 hover:text-red-600' : 'text-ink/60 hover:text-ink'
+            danger ? 'text-danger hover:text-danger/80' : 'text-ink/60 hover:text-ink'
           }`}
         >
           {label}

@@ -43,13 +43,13 @@ export default function SectionTable({ sections, academicYearId, gradeLevels }: 
                   </td>
                   <td className="px-5 py-3 text-sm text-prose">{s.gradeLevelName}</td>
                   <td className="px-5 py-3 text-sm text-prose">
-                    <span className={isFull ? 'text-red-600 font-medium' : ''}>{s.activeEnrollments}</span>
+                    <span className={isFull ? 'text-warning font-medium' : ''}>{s.activeEnrollments}</span>
                     <span className="text-ghost">/{s.maxCapacity}</span>
                   </td>
                   <td className="px-5 py-3 text-sm text-prose">{s.homeroomTeacherName ?? '—'}</td>
                   <td className="px-5 py-3">
                     {isFull ? (
-                      <span className="inline-flex items-center bg-red-50 text-red-600 px-2.5 py-0.5 rounded-full text-xs font-medium">Llena</span>
+                      <span className="inline-flex items-center bg-warning/10 text-warning px-2.5 py-0.5 rounded-full text-xs font-medium">Llena</span>
                     ) : (
                       <span className="inline-flex items-center bg-accent/30 text-ink/80 px-2.5 py-0.5 rounded-full text-xs font-medium">Disponible</span>
                     )}

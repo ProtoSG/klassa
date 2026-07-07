@@ -108,9 +108,9 @@ export default function TransferEnrollmentDialog({ enrollment, open, onClose, on
             </div>
 
             {selectedSection && (
-              <div className="flex items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <ArrowRightLeft size={14} className="text-amber-600 shrink-0" />
-                <p className="text-xs text-amber-800">
+              <div className="flex items-center gap-2.5 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3">
+                <ArrowRightLeft size={14} className="text-warning shrink-0" />
+                <p className="text-xs text-warning">
                   <span className="font-medium">{enrollment?.sectionName}</span>
                   {' → '}
                   <span className="font-medium">{selectedSection.name}</span>

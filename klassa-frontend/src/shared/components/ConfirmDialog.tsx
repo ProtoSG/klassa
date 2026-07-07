@@ -37,7 +37,7 @@ export function ConfirmDialog({
           disabled={loading}
           className={`inline-flex items-center justify-center gap-2 rounded-xl text-xs font-medium px-3 py-1.5 transition-all duration-300 disabled:opacity-50 disabled:pointer-events-none hover:scale-[1.02] active:scale-[0.98] ${
             danger
-              ? 'bg-red-500 text-white hover:bg-red-600'
+              ? 'bg-danger text-white hover:bg-danger/90'
               : 'bg-ink text-white shadow-card hover:shadow-hover'
           }`}
         >
