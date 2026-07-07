@@ -1,0 +1,30 @@
+meta {
+  name: Update Family
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{base_url}}/families/{{family_id}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+body:json {
+  {
+    "guardianName": "Carlos Pérez",
+    "guardianEmail": "carlos.perez@gmail.com",
+    "guardianPhone": "999123456",
+    "address": "Av. Los Álamos 123, Lima",
+    "emergencyContact": "Rosa Pérez",
+    "emergencyPhone": "987654321"
+  }
+}

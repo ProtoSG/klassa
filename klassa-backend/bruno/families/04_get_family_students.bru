@@ -1,0 +1,19 @@
+meta {
+  name: Get Family Students
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/families/{{family_id}}/students
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}

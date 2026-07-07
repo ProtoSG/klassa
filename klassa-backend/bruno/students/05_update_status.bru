@@ -1,0 +1,23 @@
+meta {
+  name: Update Student Status
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{base_url}}/students/{{student_id}}/status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+params:query {
+  status: ACTIVE
+}

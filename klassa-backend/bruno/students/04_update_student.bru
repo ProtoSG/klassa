@@ -1,0 +1,31 @@
+meta {
+  name: Update Student
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{base_url}}/students/{{student_id}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+body:json {
+  {
+    "code": "EST-001",
+    "firstName": "Lucía",
+    "lastName": "Pérez",
+    "birthDate": "2015-03-20",
+    "gender": "F",
+    "familyId": 1,
+    "photoUrl": null
+  }
+}

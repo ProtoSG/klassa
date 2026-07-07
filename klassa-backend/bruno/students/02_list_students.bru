@@ -1,0 +1,23 @@
+meta {
+  name: List Students
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/students
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  X-Tenant-Subdomain: {{subdomain}}
+}
+
+params:query {
+  ~status: ACTIVE
+}
