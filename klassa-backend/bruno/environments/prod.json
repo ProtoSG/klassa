@@ -1,0 +1,83 @@
+{
+  "name": "prod",
+  "variables": [
+    {
+      "name": "base_url",
+      "value": "http://api.klassa.app/api",
+      "enabled": true,
+      "secret": false
+    },
+    {
+      "name": "token",
+      "value": "",
+      "enabled": true,
+      "secret": true
+    },
+    {
+      "name": "subdomain",
+      "value": "demo",
+      "enabled": true,
+      "secret": false
+    },
+    {
+      "name": "user_id",
+      "value": "1",
+      "enabled": true,
+      "secret": false
+    },
+    {
+      "name": "student_id",
+      "value": "1",
+      "enabled": true,
+      "secret": false
+    },
+    {
+      "name": "family_id",
+      "value": "1",
+      "enabled": true,
+      "secret": false
+    },
+    {
+      "name": "academic_year_id",
+      "value": "1",
+      "enabled": true,
+      "secret": false
+    },
+    {
+      "name": "grade_level_id",
+      "value": "1",
+      "enabled": true,
+      "secret": false
+    },
+    {
+      "name": "section_id",
+      "value": "1",
+      "enabled": true,
+      "secret": false
+    },
+    {
+      "name": "subject_id",
+      "value": "1",
+      "enabled": true,
+      "secret": false
+    },
+    {
+      "name": "enrollment_id",
+      "value": "1",
+      "enabled": true,
+      "secret": false
+    },
+    {
+      "name": "fee_schedule_id",
+      "value": "1",
+      "enabled": true,
+      "secret": false
+    },
+    {
+      "name": "invoice_id",
+      "value": "1",
+      "enabled": true,
+      "secret": false
+    }
+  ]
+}
