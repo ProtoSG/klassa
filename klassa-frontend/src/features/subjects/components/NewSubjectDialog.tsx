@@ -1,0 +1,97 @@
+'use client'
+
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from 'sonner'
+import { createSubjectSchema, type CreateSubjectInput } from '../schemas'
+import { createSubject } from '../actions'
+import { Dialog } from '@/shared/components/Dialog'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import type { GradeLevel } from '@/features/grade-levels/types'
+
+interface Props {
+  gradeLevels: GradeLevel[]
+}
+
+export default function NewSubjectDialog({ gradeLevels }: Props) {
+  const [open, setOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const router = useRouter()
+
+  const form = useForm<CreateSubjectInput>({
+    resolver: zodResolver(createSubjectSchema),
+    defaultValues: { name: '', gradeLevelId: 0, hoursPerWeek: 1 },
+    mode: 'onTouched',
+  })
+
+  function handleClose() {
+    if (isPending) return
+    setOpen(false)
+    form.reset()
+  }
+
+  function onSubmit(values: CreateSubjectInput) {
+    startTransition(async () => {
+      try {
+        await createSubject(values)
+        toast.success('Materia creada')
+        handleClose()
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Error al crear la materia')
+      }
+    })
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 bg-ink text-white text-sm font-medium px-4 py-2 rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-card"
+      >
+        + Nueva materia
+      </button>
+
+      <Dialog open={open} onClose={handleClose} title="Nueva materia" className="max-w-sm">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nombre</FormLabel>
+                <FormControl><Input placeholder="Matemáticas" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="gradeLevelId" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Grado</FormLabel>
+                <FormControl>
+                  <select value={field.value || ''} onChange={(e) => field.onChange(Number(e.target.value))} className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/70">
+                    <option value="">Seleccionar grado</option>
+                    {gradeLevels.map((gl) => <option key={gl.id} value={gl.id}>{gl.name}</option>)}
+                  </select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="hoursPerWeek" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Horas por semana</FormLabel>
+                <FormControl><Input type="number" min={1} max={20} {...field} onChange={(e) => field.onChange(Number(e.target.value))} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <div className="flex gap-2 justify-end pt-1">
+              <Button type="button" variant="outline" size="sm" onClick={handleClose} disabled={isPending}>Cancelar</Button>
+              <Button type="submit" size="sm" disabled={isPending}>{isPending ? 'Creando...' : 'Crear'}</Button>
+            </div>
+          </form>
+        </Form>
+      </Dialog>
+    </>
+  )
+}
