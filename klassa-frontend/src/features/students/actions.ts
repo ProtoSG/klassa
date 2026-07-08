@@ -41,7 +41,6 @@ export async function createStudent(input: NewStudentInput): Promise<StudentResp
   })
 
   const student = await tenantFetch<StudentResponse>('/students', 'POST', {
-    code: input.code,
     firstName: input.firstName,
     lastName: input.lastName,
     birthDate: input.birthDate,

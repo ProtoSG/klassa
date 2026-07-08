@@ -36,13 +36,16 @@ public class StudentService {
     private final FamilyRepository familyRepository;
     private final StudentMapper studentMapper;
     private final StorageService storageService;
+    private final StudentCodeGenerator studentCodeGenerator;
 
     public StudentService(StudentRepository studentRepository, FamilyRepository familyRepository,
-                          StudentMapper studentMapper, StorageService storageService) {
+                          StudentMapper studentMapper, StorageService storageService,
+                          StudentCodeGenerator studentCodeGenerator) {
         this.studentRepository = studentRepository;
         this.familyRepository = familyRepository;
         this.studentMapper = studentMapper;
         this.storageService = storageService;
+        this.studentCodeGenerator = studentCodeGenerator;
     }
 
     // Redis cache is shared across tenants, but entity ids are only unique per tenant schema.
@@ -53,10 +56,13 @@ public class StudentService {
     @Transactional
     @CacheEvict(value = "students", allEntries = true)
     public StudentResponse create(StudentRequest request) {
-        if (studentRepository.existsByCode(request.code())) {
-            throw new BusinessRuleException(ErrorCode.STUDENT_CODE_TAKEN, request.code());
+        String code = request.code();
+        if (code == null || code.isBlank()) {
+            code = studentCodeGenerator.nextCode();
+        } else if (studentRepository.existsByCode(code)) {
+            throw new BusinessRuleException(ErrorCode.STUDENT_CODE_TAKEN, code);
         }
-        Student student = buildStudent(new Student(), request);
+        Student student = buildStudent(new Student(), request, code);
         return toResponse(studentRepository.save(student));
     }
 
@@ -91,7 +97,7 @@ public class StudentService {
         if (!student.getCode().equals(request.code()) && studentRepository.existsByCode(request.code())) {
             throw new BusinessRuleException(ErrorCode.STUDENT_CODE_TAKEN, request.code());
         }
-        return toResponse(studentRepository.save(buildStudent(student, request)));
+        return toResponse(studentRepository.save(buildStudent(student, request, request.code())));
     }
 
     @Transactional
@@ -184,8 +190,8 @@ public class StudentService {
         }
     }
 
-    private Student buildStudent(Student student, StudentRequest request) {
-        student.setCode(request.code());
+    private Student buildStudent(Student student, StudentRequest request, String code) {
+        student.setCode(code);
         student.setFirstName(request.firstName());
         student.setLastName(request.lastName());
         student.setBirthDate(request.birthDate());

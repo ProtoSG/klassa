@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
 export const newStudentSchema = z.object({
-  code: z.string().min(1, 'Requerido'),
   firstName: z.string().min(1, 'Requerido'),
   lastName: z.string().min(1, 'Requerido'),
   birthDate: z.string().min(1, 'Requerido'),

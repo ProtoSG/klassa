@@ -10,7 +10,6 @@ import java.time.LocalDate;
 
 public record StudentRequest(
 
-        @NotBlank
         @Size(max = 20)
         String code,
 

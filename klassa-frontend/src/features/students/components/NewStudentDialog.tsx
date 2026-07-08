@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 const STEPS = [
-  { label: 'Alumno',     fields: ['firstName', 'lastName', 'code', 'birthDate', 'gender'] },
+  { label: 'Alumno',     fields: ['firstName', 'lastName', 'birthDate', 'gender'] },
   { label: 'Acudiente',  fields: ['guardianName', 'guardianEmail', 'guardianPhone', 'address'] },
   { label: 'Emergencia', fields: [] },
 ] as const
@@ -56,7 +56,7 @@ export default function NewStudentDialog() {
   const form = useForm<NewStudentInput>({
     resolver: zodResolver(newStudentSchema),
     defaultValues: {
-      code: '', firstName: '', lastName: '',
+      firstName: '', lastName: '',
       birthDate: '', gender: 'M',
       guardianName: '', guardianEmail: '',
       guardianPhone: '', address: '',
@@ -219,13 +219,6 @@ export default function NewStudentDialog() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  {/* <FormField control={form.control} name="code" render={({ field }) => ( */}
-                  {/*   <FormItem> */}
-                  {/*     <FormLabel>Código</FormLabel> */}
-                  {/*     <FormControl><Input placeholder="EST-001" {...field} /></FormControl> */}
-                  {/*     <FormMessage /> */}
-                  {/*   </FormItem> */}
-                  {/* )} /> */}
                   <FormField control={form.control} name="birthDate" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nacimiento</FormLabel>
