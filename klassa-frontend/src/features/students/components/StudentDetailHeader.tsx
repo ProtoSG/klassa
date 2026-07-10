@@ -19,9 +19,10 @@ const STATUS_LABEL: Record<StudentStatus, string> = {
 
 interface Props {
   student: StudentResponse
+  canManage: boolean
 }
 
-export default function StudentDetailHeader({ student }: Props) {
+export default function StudentDetailHeader({ student, canManage }: Props) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-4">
@@ -39,6 +40,7 @@ export default function StudentDetailHeader({ student }: Props) {
             firstName={student.firstName}
             lastName={student.lastName}
             photoUrl={student.photoUrl}
+            canManage={canManage}
           />
           <div>
             <h1 className="text-xl font-medium text-ink">{student.fullName}</h1>
@@ -52,10 +54,12 @@ export default function StudentDetailHeader({ student }: Props) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <StatusChangeButton studentId={student.id} currentStatus={student.status} />
-        <EditStudentDialog student={student} />
-      </div>
+      {canManage && (
+        <div className="flex items-center gap-2">
+          <StatusChangeButton studentId={student.id} currentStatus={student.status} />
+          <EditStudentDialog student={student} />
+        </div>
+      )}
     </div>
   )
 }

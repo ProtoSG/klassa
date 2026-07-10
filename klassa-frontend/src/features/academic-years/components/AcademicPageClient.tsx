@@ -14,6 +14,7 @@ import type { AcademicYearResponse } from '@/features/academic-years/types'
 import type { GradeLevel, GradeLevelType } from '@/features/grade-levels/types'
 import type { Subject } from '@/features/subjects/types'
 import type { SectionResponse } from '@/features/sections/types'
+import type { UserResponse } from '@/features/users/types'
 
 const TABS = [
   { key: 'years', label: 'Años' },
@@ -30,10 +31,13 @@ interface Props {
   subjects: Subject[]
   sections: SectionResponse[]
   activeYearId: number | null
+  isTeacher?: boolean
+  teachers: UserResponse[]
 }
 
-export default function AcademicPageClient({ years, grouped, subjects, sections, activeYearId }: Props) {
-  const [tab, setTab] = useState<TabKey>('years')
+export default function AcademicPageClient({ years, grouped, subjects, sections, activeYearId, isTeacher, teachers }: Props) {
+  const visibleTabs = isTeacher ? TABS.filter((t) => t.key === 'sections') : TABS
+  const [tab, setTab] = useState<TabKey>(isTeacher ? 'sections' : 'years')
   const allGradeLevels = Object.values(grouped).flat()
 
   return (
@@ -45,7 +49,7 @@ export default function AcademicPageClient({ years, grouped, subjects, sections,
 
       {/* Tabs */}
       <div className="flex items-center gap-1 bg-muted-fill rounded-xl p-1 border border-line w-fit">
-        {TABS.map(({ key, label }) => (
+        {visibleTabs.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
@@ -83,6 +87,8 @@ export default function AcademicPageClient({ years, grouped, subjects, sections,
           sections={sections}
           academicYearId={activeYearId ?? years[0]?.id ?? 0}
           gradeLevels={allGradeLevels}
+          teachers={teachers}
+          canManage={!isTeacher}
         />
       )}
     </div>

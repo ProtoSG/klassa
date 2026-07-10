@@ -6,6 +6,7 @@ import StudentInfoCard from '@/features/students/components/StudentInfoCard'
 import FamilyInfoCard from '@/features/students/components/FamilyInfoCard'
 import StudentEnrollments from '@/features/students/components/StudentEnrollments'
 import EnrollmentAttendanceSummary from '@/features/attendance/components/EnrollmentAttendanceSummary'
+import { getMe } from '@/features/auth/actions'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -28,18 +29,21 @@ export default async function StudentDetailPage({ params }: Props) {
     ? await getFamilyById(student.familyId).catch(() => null)
     : null
 
+  const session = await getMe()
+  const canManage = session?.user.role !== 'TEACHER'
+
   const activeEnrollments = enrollments.filter((e) => e.status === 'ACTIVE')
 
   return (
     <div className="flex flex-col gap-5 px-4 md:px-8 max-w-7xl mx-auto">
-      <StudentDetailHeader student={student} />
+      <StudentDetailHeader student={student} canManage={canManage} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <StudentInfoCard student={student} />
-        <FamilyInfoCard family={family} />
+        <FamilyInfoCard family={family} canManage={canManage} />
       </div>
 
-      <StudentEnrollments enrollments={enrollments} />
+      <StudentEnrollments enrollments={enrollments} canManage={canManage} />
 
       {activeEnrollments.length > 0 && (
         <div className="rounded-2xl border border-line bg-white shadow-card overflow-hidden">

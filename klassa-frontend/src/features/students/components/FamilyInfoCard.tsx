@@ -3,9 +3,10 @@ import EditFamilyDialog from './EditFamilyDialog'
 
 interface Props {
   family: FamilyResponse | null
+  canManage: boolean
 }
 
-export default function FamilyInfoCard({ family }: Props) {
+export default function FamilyInfoCard({ family, canManage }: Props) {
   if (!family) {
     return (
       <div className="rounded-2xl border border-line bg-white p-5 shadow-card">
@@ -19,7 +20,7 @@ export default function FamilyInfoCard({ family }: Props) {
     <div className="rounded-2xl border border-line bg-white p-5 shadow-card">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-medium text-ink">Información Familiar</h2>
-        <EditFamilyDialog family={family} />
+        {canManage && <EditFamilyDialog family={family} />}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>

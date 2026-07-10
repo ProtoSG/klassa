@@ -1,12 +1,16 @@
 import { getAcademicYears } from '@/features/academic-years/api'
 import { getSectionsByYear } from '@/features/sections/api'
 import AttendanceClient from '@/features/attendance/components/AttendanceClient'
+import { getMe } from '@/features/auth/actions'
 
 export default async function AttendancePage() {
+  const session = await getMe()
+  const isTeacher = session?.user.role === 'TEACHER'
+
   const years = await getAcademicYears().catch(() => [])
   const activeYear = years.find((y) => y.active)
   const sections = activeYear
-    ? await getSectionsByYear(activeYear.id).catch(() => [])
+    ? await getSectionsByYear(activeYear.id, { mine: isTeacher }).catch(() => [])
     : []
 
   const today = new Date().toISOString().split('T')[0]

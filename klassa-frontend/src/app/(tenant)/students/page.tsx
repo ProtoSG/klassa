@@ -4,6 +4,7 @@ import StudentTable from '@/features/students/components/StudentTable'
 import StudentsFilters from '@/features/students/components/StudentsFilters'
 import NewStudentDialog from '@/features/students/components/NewStudentDialog'
 import Pagination from '@/shared/components/Pagination'
+import { getMe } from '@/features/auth/actions'
 
 const PAGE_SIZE = 20
 
@@ -23,6 +24,9 @@ export default async function StudentsPage({
   const status = sp.status ?? ''
   const search = sp.search ?? ''
 
+  const session = await getMe()
+  const canManage = session?.user.role !== 'TEACHER'
+
   const data = await getStudentPage({
     page,
     size: PAGE_SIZE,
@@ -40,12 +44,12 @@ export default async function StudentsPage({
             {data ? `${data.totalElements} alumno${data.totalElements !== 1 ? 's' : ''} en total` : 'Gestión de estudiantes'}
           </p>
         </div>
-        <NewStudentDialog />
+        {canManage && <NewStudentDialog />}
       </div>
 
       {/* Filters — client */}
       <Suspense>
-        <StudentsFilters />
+        <StudentsFilters canManage={canManage} />
       </Suspense>
 
       {/* Table */}

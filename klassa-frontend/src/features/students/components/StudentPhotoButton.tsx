@@ -13,9 +13,10 @@ interface Props {
   firstName: string
   lastName: string
   photoUrl?: string | null
+  canManage: boolean
 }
 
-export default function StudentPhotoButton({ studentId, fullName, firstName, lastName, photoUrl }: Props) {
+export default function StudentPhotoButton({ studentId, fullName, firstName, lastName, photoUrl, canManage }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isPending, startTransition] = useTransition()
   const [preview, setPreview] = useState<string | null>(null)
@@ -68,6 +69,18 @@ export default function StudentPhotoButton({ studentId, fullName, firstName, las
   }
 
   const src = preview ?? photoUrl
+
+  if (!canManage) {
+    return (
+      <div className="relative w-12 h-12 rounded-full bg-muted-fill flex items-center justify-center shrink-0 text-sm font-medium text-prose overflow-hidden">
+        {src ? (
+          <img src={src} alt={fullName} className="w-12 h-12 rounded-full object-cover" />
+        ) : (
+          <span>{firstName[0]}{lastName[0]}</span>
+        )}
+      </div>
+    )
+  }
 
   return (
     <button

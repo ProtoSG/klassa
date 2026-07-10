@@ -12,7 +12,11 @@ const STATUS_TABS: { label: string; value: StudentStatus | '' }[] = [
   { label: 'Trasladados', value: 'TRANSFERRED' },
 ]
 
-export default function StudentsFilters() {
+interface Props {
+  canManage: boolean
+}
+
+export default function StudentsFilters({ canManage }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -43,22 +47,26 @@ export default function StudentsFilters() {
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-      {/* Status tabs */}
-      <div className="flex items-center gap-1 bg-muted-fill rounded-xl p-1 border border-line">
-        {STATUS_TABS.map(({ label, value }) => (
-          <button
-            key={value}
-            onClick={() => update('status', value)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
-              currentStatus === value
-                ? 'bg-ink text-white shadow-card'
-                : 'text-prose hover:text-ink hover:bg-white/60'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* Status tabs — filters by the student's school-wide status (still enrolled at this
+          school at all), not by section-enrollment status. Not useful for TEACHER: their roster
+          is already scoped to active enrollments in their own sections. */}
+      {canManage && (
+        <div className="flex items-center gap-1 bg-muted-fill rounded-xl p-1 border border-line">
+          {STATUS_TABS.map(({ label, value }) => (
+            <button
+              key={value}
+              onClick={() => update('status', value)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                currentStatus === value
+                  ? 'bg-ink text-white shadow-card'
+                  : 'text-prose hover:text-ink hover:bg-white/60'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Search */}
       <form onSubmit={handleSearch} className="relative w-full sm:w-64">

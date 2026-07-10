@@ -26,9 +26,10 @@ function fmtDate(iso: string) {
 
 interface Props {
   enrollments: EnrollmentResponse[]
+  canManage: boolean
 }
 
-export default function StudentEnrollments({ enrollments: initial }: Props) {
+export default function StudentEnrollments({ enrollments: initial, canManage }: Props) {
   const [enrollments, setEnrollments] = useState(initial)
   const [transferTarget, setTransferTarget] = useState<EnrollmentResponse | null>(null)
 
@@ -68,7 +69,7 @@ export default function StudentEnrollments({ enrollments: initial }: Props) {
                     </span>
                   </TableCell>
                   <TableCell>
-                    {e.status === 'ACTIVE' && (
+                    {canManage && e.status === 'ACTIVE' && (
                       <button
                         onClick={() => setTransferTarget(e)}
                         className="p-1.5 rounded-lg text-ghost hover:text-warning hover:bg-warning/10 transition-colors duration-150"

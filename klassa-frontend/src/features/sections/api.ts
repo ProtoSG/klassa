@@ -27,8 +27,12 @@ async function tenantFetch<T>(path: string, init: RequestInit = {}): Promise<T> 
   return body.data as T
 }
 
-export async function getSectionsByYear(academicYearId: number): Promise<SectionResponse[]> {
-  return tenantFetch<SectionResponse[]>(`/sections?academicYearId=${academicYearId}`)
+export async function getSectionsByYear(
+  academicYearId: number,
+  options?: { mine?: boolean }
+): Promise<SectionResponse[]> {
+  const mineParam = options?.mine ? '&mine=true' : ''
+  return tenantFetch<SectionResponse[]>(`/sections?academicYearId=${academicYearId}${mineParam}`)
 }
 
 export async function getSectionById(id: number): Promise<SectionResponse> {
