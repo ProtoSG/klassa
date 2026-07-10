@@ -17,6 +17,10 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
 
     List<Section> findAllByHomeroomTeacherId(Long teacherId);
 
+    List<Section> findAllByAcademicYearIdAndHomeroomTeacherId(Long academicYearId, Long teacherId);
+
+    boolean existsByIdAndHomeroomTeacherId(Long id, Long teacherId);
+
     /**
      * Locks the section row so concurrent enrollments serialise on it, making the
      * capacity check-then-insert atomic.

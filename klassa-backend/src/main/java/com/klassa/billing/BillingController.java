@@ -42,7 +42,7 @@ public class BillingController {
     // ─── Fee Schedules ────────────────────────────────────────────────────────
 
     @PostMapping("/fee-schedules")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TREASURER')")
     public ResponseEntity<ApiResponse<FeeScheduleResponse>> createFeeSchedule(
             @Valid @RequestBody FeeScheduleRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -50,13 +50,14 @@ public class BillingController {
     }
 
     @GetMapping("/fee-schedules")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TREASURER')")
     public ResponseEntity<ApiResponse<List<FeeScheduleResponse>>> findFeeSchedules(
             @RequestParam Long academicYearId) {
         return ResponseEntity.ok(ApiResponse.ok(feeScheduleService.findByAcademicYear(academicYearId)));
     }
 
     @DeleteMapping("/fee-schedules/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TREASURER')")
     public ResponseEntity<ApiResponse<FeeScheduleResponse>> deactivateFeeSchedule(
             @PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(feeScheduleService.deactivate(id)));
@@ -81,7 +82,12 @@ public class BillingController {
         return ResponseEntity.accepted().build();
     }
 
+    private static final String OWNS_STUDENT_BILLING =
+            "hasRole('ADMIN') or hasRole('TREASURER') " +
+            "or (hasRole('PARENT') and @familySecurity.ownsStudent(#studentId, authentication.principal.userId))";
+
     @GetMapping("/invoices/student/{studentId}")
+    @PreAuthorize(OWNS_STUDENT_BILLING)
     public ResponseEntity<ApiResponse<PageResponse<InvoiceResponse>>> findInvoicesByStudent(
             @PathVariable Long studentId,
             @RequestParam(required = false) InvoiceStatus status,
@@ -93,11 +99,14 @@ public class BillingController {
     }
 
     @GetMapping("/invoices/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TREASURER') " +
+            "or (hasRole('PARENT') and @familySecurity.ownsInvoice(#id, authentication.principal.userId))")
     public ResponseEntity<ApiResponse<InvoiceResponse>> findInvoiceById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(invoiceService.findById(id)));
     }
 
     @GetMapping("/invoices/student/{studentId}/balance")
+    @PreAuthorize(OWNS_STUDENT_BILLING)
     public ResponseEntity<ApiResponse<BigDecimal>> getPendingBalance(@PathVariable Long studentId) {
         return ResponseEntity.ok(ApiResponse.ok(invoiceService.getPendingBalance(studentId)));
     }
@@ -126,6 +135,8 @@ public class BillingController {
     }
 
     @GetMapping("/payments/invoice/{invoiceId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TREASURER') " +
+            "or (hasRole('PARENT') and @familySecurity.ownsInvoice(#invoiceId, authentication.principal.userId))")
     public ResponseEntity<ApiResponse<List<PaymentResponse>>> findPaymentsByInvoice(
             @PathVariable Long invoiceId) {
         return ResponseEntity.ok(ApiResponse.ok(paymentService.findByInvoice(invoiceId)));

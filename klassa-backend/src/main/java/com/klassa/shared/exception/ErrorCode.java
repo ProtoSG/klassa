@@ -33,6 +33,13 @@ public enum ErrorCode {
     ENROLLMENT_NOT_ACTIVE("La matrícula no está activa"),
     ENROLLMENT_NOT_ACTIVE_TRANSFER("Solo se puede trasladar una matrícula activa"),
 
+    // --- Teaching assignments ---
+    SUBJECT_GRADE_LEVEL_MISMATCH("La materia no pertenece al grado de la sección"),
+    USER_NOT_TEACHER("El usuario seleccionado no tiene el rol de docente"),
+
+    // --- Calendar events ---
+    CALENDAR_EVENT_INVALID_DATES("La fecha de fin debe ser igual o posterior a la fecha de inicio"),
+
     // --- Attendance / score ---
     ATTENDANCE_INACTIVE_ENROLLMENT("No se puede registrar asistencia en una matrícula inactiva"),
     SCORE_INACTIVE_ENROLLMENT("No se puede calificar una matrícula inactiva"),
@@ -43,6 +50,9 @@ public enum ErrorCode {
     PAID_INVOICE_CANCEL("No se puede anular una factura pagada"),
     INVOICE_ALREADY_PAID("La factura %s ya está pagada"),
     INVOICE_CANCELLED("La factura %s está anulada"),
+
+    // --- Family / guardian ---
+    FAMILY_ALREADY_LINKED("La familia ya tiene un apoderado vinculado"),
 
     // --- Tenant ---
     SUBDOMAIN_TAKEN("El subdominio '%s' ya está en uso"),

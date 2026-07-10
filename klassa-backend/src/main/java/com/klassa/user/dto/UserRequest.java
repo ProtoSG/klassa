@@ -25,5 +25,7 @@ public record UserRequest(
 
         @NotBlank
         @Size(max = 100)
-        String lastName
+        String lastName,
+
+        Long familyId
 ) {}

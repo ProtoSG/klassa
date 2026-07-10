@@ -36,11 +36,13 @@ public class AcademicYearController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER') or hasRole('TREASURER')")
     public ResponseEntity<ApiResponse<List<AcademicYearResponse>>> findAll() {
         return ResponseEntity.ok(ApiResponse.ok(academicYearService.findAll()));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER') or hasRole('TREASURER')")
     public ResponseEntity<ApiResponse<AcademicYearResponse>> findById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(academicYearService.findById(id)));
     }

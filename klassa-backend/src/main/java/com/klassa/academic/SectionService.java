@@ -49,6 +49,12 @@ public class SectionService {
                 .toList();
     }
 
+    public List<SectionResponse> findByAcademicYearAndHomeroomTeacher(Long academicYearId, Long teacherId) {
+        return sectionRepository.findAllByAcademicYearIdAndHomeroomTeacherId(academicYearId, teacherId).stream()
+                .map(this::toResponseWithCount)
+                .toList();
+    }
+
     public SectionResponse findById(Long id) {
         return sectionRepository.findById(id)
                 .map(this::toResponseWithCount)

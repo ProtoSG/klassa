@@ -3,6 +3,8 @@ package com.klassa.user;
 import com.klassa.shared.exception.BusinessRuleException;
 import com.klassa.shared.exception.ErrorCode;
 import com.klassa.shared.exception.EntityNotFoundException;
+import com.klassa.student.Family;
+import com.klassa.student.FamilyRepository;
 import com.klassa.user.dto.UserRequest;
 import com.klassa.user.dto.UserResponse;
 import com.klassa.user.dto.UserUpdateRequest;
@@ -19,12 +21,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final FamilyRepository familyRepository;
 
     public UserService(UserRepository userRepository, UserMapper userMapper,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder, FamilyRepository familyRepository) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
+        this.familyRepository = familyRepository;
     }
 
     @Transactional
@@ -39,7 +43,23 @@ public class UserService {
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
         user.setActive(true);
-        return userMapper.toResponse(userRepository.save(user));
+        user = userRepository.save(user);
+
+        if (request.role() == UserRole.PARENT && request.familyId() != null) {
+            linkGuardian(user, request.familyId());
+        }
+
+        return userMapper.toResponse(user);
+    }
+
+    private void linkGuardian(User user, Long familyId) {
+        Family family = familyRepository.findById(familyId)
+                .orElseThrow(() -> new EntityNotFoundException("Family", familyId));
+        if (family.getGuardianUser() != null && !family.getGuardianUser().getId().equals(user.getId())) {
+            throw new BusinessRuleException(ErrorCode.FAMILY_ALREADY_LINKED);
+        }
+        family.setGuardianUser(user);
+        familyRepository.save(family);
     }
 
     @Transactional

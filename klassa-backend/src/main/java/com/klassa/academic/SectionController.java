@@ -2,6 +2,7 @@ package com.klassa.academic;
 
 import com.klassa.academic.dto.SectionRequest;
 import com.klassa.academic.dto.SectionResponse;
+import com.klassa.shared.security.SecurityUser;
 import com.klassa.shared.web.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -9,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,12 +35,19 @@ public class SectionController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<List<SectionResponse>>> findByAcademicYear(
-            @RequestParam Long academicYearId) {
-        return ResponseEntity.ok(ApiResponse.ok(sectionService.findByAcademicYear(academicYearId)));
+            @RequestParam Long academicYearId,
+            @RequestParam(required = false, defaultValue = "false") boolean mine,
+            @AuthenticationPrincipal SecurityUser principal) {
+        List<SectionResponse> result = mine
+                ? sectionService.findByAcademicYearAndHomeroomTeacher(academicYearId, principal.userId())
+                : sectionService.findByAcademicYear(academicYearId);
+        return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<SectionResponse>> findById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(sectionService.findById(id)));
     }

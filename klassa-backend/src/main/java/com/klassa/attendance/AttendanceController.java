@@ -36,7 +36,13 @@ public class AttendanceController {
                 .body(ApiResponse.created(attendanceService.register(request)));
     }
 
+    private static final String OWNS_ENROLLMENT =
+            "hasRole('ADMIN') " +
+            "or (hasRole('TEACHER') and @academicSecurity.ownsEnrollment(#enrollmentId, authentication.principal.userId)) " +
+            "or (hasRole('PARENT') and @familySecurity.ownsEnrollment(#enrollmentId, authentication.principal.userId))";
+
     @GetMapping("/enrollment/{enrollmentId}")
+    @PreAuthorize(OWNS_ENROLLMENT)
     public ResponseEntity<ApiResponse<List<AttendanceResponse>>> findByEnrollment(
             @PathVariable Long enrollmentId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
@@ -48,6 +54,8 @@ public class AttendanceController {
     }
 
     @GetMapping("/section/{sectionId}/date/{date}")
+    @PreAuthorize("hasRole('ADMIN') " +
+            "or (hasRole('TEACHER') and @academicSecurity.ownsSection(#sectionId, authentication.principal.userId))")
     public ResponseEntity<ApiResponse<List<AttendanceResponse>>> findBySectionAndDate(
             @PathVariable Long sectionId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
@@ -56,6 +64,7 @@ public class AttendanceController {
     }
 
     @GetMapping("/enrollment/{enrollmentId}/percentage")
+    @PreAuthorize(OWNS_ENROLLMENT)
     public ResponseEntity<ApiResponse<AttendancePercentageResponse>> getPercentage(
             @PathVariable Long enrollmentId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,

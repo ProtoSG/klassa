@@ -34,6 +34,8 @@ public class FamilyController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER') " +
+            "or (hasRole('PARENT') and @familySecurity.ownsFamily(#id, authentication.principal.userId))")
     public ResponseEntity<ApiResponse<FamilyResponse>> findById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(studentService.findFamilyById(id)));
     }
@@ -46,6 +48,8 @@ public class FamilyController {
     }
 
     @GetMapping("/{id}/students")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER') " +
+            "or (hasRole('PARENT') and @familySecurity.ownsFamily(#id, authentication.principal.userId))")
     public ResponseEntity<ApiResponse<List<StudentResponse>>> findStudents(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(studentService.findByFamily(id)));
     }

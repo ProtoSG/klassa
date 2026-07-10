@@ -10,7 +10,9 @@ import com.klassa.shared.exception.ErrorCode;
 import com.klassa.shared.exception.EntityNotFoundException;
 import com.klassa.shared.security.SecurityUser;
 import com.klassa.user.UserRepository;
+import com.klassa.user.UserRole;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -48,6 +50,15 @@ public class AttendanceService {
             throw new BusinessRuleException(ErrorCode.ATTENDANCE_INACTIVE_ENROLLMENT);
         }
 
+        SecurityUser principal = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .map(auth -> (SecurityUser) auth.getPrincipal())
+                .orElse(null);
+
+        if (principal != null && principal.role() == UserRole.TEACHER
+                && !enrollmentRepository.existsByIdAndSectionHomeroomTeacherId(request.enrollmentId(), principal.userId())) {
+            throw new AccessDeniedException("No eres el tutor de esta sección");
+        }
+
         AttendanceRecord record = attendanceRepository
                 .findByEnrollmentIdAndDate(request.enrollmentId(), request.date())
                 .orElse(new AttendanceRecord());
@@ -57,10 +68,9 @@ public class AttendanceService {
         record.setStatus(request.status());
         record.setNote(request.note());
 
-        Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
-                .map(auth -> (SecurityUser) auth.getPrincipal())
-                .flatMap(su -> userRepository.findById(su.userId()))
-                .ifPresent(record::setRegisteredBy);
+        if (principal != null) {
+            userRepository.findById(principal.userId()).ifPresent(record::setRegisteredBy);
+        }
 
         return attendanceMapper.toResponse(attendanceRepository.save(record));
     }

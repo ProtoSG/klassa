@@ -4,6 +4,7 @@ import com.klassa.shared.exception.BusinessRuleException;
 import com.klassa.shared.exception.ErrorCode;
 import com.klassa.shared.exception.EntityNotFoundException;
 import com.klassa.shared.multitenancy.TenantContext;
+import com.klassa.shared.security.SecurityUser;
 import com.klassa.shared.storage.S3StorageService;
 import com.klassa.shared.storage.StorageService;
 import com.klassa.shared.web.PageResponse;
@@ -11,6 +12,7 @@ import com.klassa.student.dto.FamilyRequest;
 import com.klassa.student.dto.FamilyResponse;
 import com.klassa.student.dto.StudentRequest;
 import com.klassa.student.dto.StudentResponse;
+import com.klassa.user.UserRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,7 +64,8 @@ public class StudentService {
         } else if (studentRepository.existsByCode(code)) {
             throw new BusinessRuleException(ErrorCode.STUDENT_CODE_TAKEN, code);
         }
-        Student student = buildStudent(new Student(), request, code);
+        Student student = buildStudent(new Student(), request);
+        student.setCode(code);
         return toResponse(studentRepository.save(student));
     }
 
@@ -73,13 +76,14 @@ public class StudentService {
                 .orElseThrow(() -> new EntityNotFoundException("Student", id));
     }
 
-    public PageResponse<StudentResponse> findAll(Pageable pageable) {
-        return PageResponse.of(studentRepository.findAll(pageable).map(this::toResponse));
-    }
-
-    public PageResponse<StudentResponse> findByStatus(StudentStatus status, Pageable pageable) {
+    // TEACHER only sees students with an active enrollment in one of their own sections (homeroom
+    // or teaching-assignment); ADMIN/TREASURER see the full tenant roster.
+    public PageResponse<StudentResponse> search(StudentStatus status, String search, SecurityUser principal,
+                                                Pageable pageable) {
+        Long teacherId = principal != null && principal.role() == UserRole.TEACHER ? principal.userId() : null;
+        String normalizedSearch = (search == null || search.isBlank()) ? null : search.trim();
         return PageResponse.of(
-                studentRepository.findAllByStatus(status, pageable).map(this::toResponse));
+                studentRepository.search(status, normalizedSearch, teacherId, pageable).map(this::toResponse));
     }
 
     public List<StudentResponse> findByFamily(Long familyId) {
@@ -94,10 +98,7 @@ public class StudentService {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Student", id));
 
-        if (!student.getCode().equals(request.code()) && studentRepository.existsByCode(request.code())) {
-            throw new BusinessRuleException(ErrorCode.STUDENT_CODE_TAKEN, request.code());
-        }
-        return toResponse(studentRepository.save(buildStudent(student, request, request.code())));
+        return toResponse(studentRepository.save(buildStudent(student, request)));
     }
 
     @Transactional
@@ -190,8 +191,7 @@ public class StudentService {
         }
     }
 
-    private Student buildStudent(Student student, StudentRequest request, String code) {
-        student.setCode(code);
+    private Student buildStudent(Student student, StudentRequest request) {
         student.setFirstName(request.firstName());
         student.setLastName(request.lastName());
         student.setBirthDate(request.birthDate());

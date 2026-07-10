@@ -36,12 +36,17 @@ public class EnrollmentController {
     }
 
     @GetMapping("/section/{sectionId}")
+    @PreAuthorize("hasRole('ADMIN') " +
+            "or (hasRole('TEACHER') and @academicSecurity.ownsSection(#sectionId, authentication.principal.userId))")
     public ResponseEntity<ApiResponse<List<EnrollmentResponse>>> findBySection(
             @PathVariable Long sectionId) {
         return ResponseEntity.ok(ApiResponse.ok(enrollmentService.findBySection(sectionId)));
     }
 
     @GetMapping("/student/{studentId}")
+    @PreAuthorize("hasRole('ADMIN') " +
+            "or (hasRole('TEACHER') and @academicSecurity.teachesStudent(#studentId, authentication.principal.userId)) " +
+            "or (hasRole('PARENT') and @familySecurity.ownsStudent(#studentId, authentication.principal.userId))")
     public ResponseEntity<ApiResponse<List<EnrollmentResponse>>> findByStudent(
             @PathVariable Long studentId) {
         return ResponseEntity.ok(ApiResponse.ok(enrollmentService.findByStudent(studentId)));

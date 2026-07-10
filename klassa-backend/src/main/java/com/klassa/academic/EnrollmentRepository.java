@@ -16,6 +16,20 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     List<Enrollment> findAllBySectionIdAndStatus(Long sectionId, EnrollmentStatus status);
 
+    boolean existsByIdAndSectionHomeroomTeacherId(Long id, Long teacherId);
+
+    boolean existsByIdAndStudentFamilyGuardianUserId(Long id, Long userId);
+
+    @Query("""
+            SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END FROM Enrollment e
+            LEFT JOIN e.section sec
+            LEFT JOIN sec.homeroomTeacher tutor
+            WHERE e.student.id = :studentId AND e.status = 'ACTIVE'
+              AND (tutor.id = :teacherId
+                   OR EXISTS (SELECT 1 FROM TeachingAssignment ta WHERE ta.section.id = sec.id AND ta.teacher.id = :teacherId))
+            """)
+    boolean existsActiveEnrollmentForStudentAndTeacher(Long studentId, Long teacherId);
+
     @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.section.id = :sectionId AND e.status = 'ACTIVE'")
     long countActiveBySectionId(Long sectionId);
 
