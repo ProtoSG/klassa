@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { ArrowRightLeft, UserMinus } from 'lucide-react'
 import {
@@ -29,10 +29,12 @@ function fmtDate(iso: string) {
 
 interface Props {
   initialEnrollments: EnrollmentResponse[]
+  canManage: boolean
 }
 
-export default function SectionEnrollments({ initialEnrollments }: Props) {
+export default function SectionEnrollments({ initialEnrollments, canManage }: Props) {
   const [enrollments, setEnrollments] = useState(initialEnrollments)
+  useEffect(() => setEnrollments(initialEnrollments), [initialEnrollments])
   const [transferTarget, setTransferTarget] = useState<EnrollmentResponse | null>(null)
   const [withdrawTarget, setWithdrawTarget] = useState<EnrollmentResponse | null>(null)
   const [isWithdrawing, startWithdraw] = useTransition()
@@ -91,7 +93,7 @@ export default function SectionEnrollments({ initialEnrollments }: Props) {
                   </span>
                 </TableCell>
                 <TableCell>
-                  {e.status === 'ACTIVE' && (
+                  {canManage && e.status === 'ACTIVE' && (
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setTransferTarget(e)}
