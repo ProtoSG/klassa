@@ -39,7 +39,6 @@ export interface EnrollmentResponse {
 }
 
 export interface UpdateStudentInput {
-  code: string
   firstName: string
   lastName: string
   birthDate: string

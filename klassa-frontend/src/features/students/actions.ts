@@ -55,7 +55,6 @@ export async function createStudent(input: NewStudentInput): Promise<StudentResp
 
 export async function updateStudent(id: number, input: UpdateStudentSchemaInput, familyId: number | null): Promise<StudentResponse> {
   const student = await tenantFetch<StudentResponse>(`/students/${id}`, 'PUT', {
-    code: input.code,
     firstName: input.firstName,
     lastName: input.lastName,
     birthDate: input.birthDate,

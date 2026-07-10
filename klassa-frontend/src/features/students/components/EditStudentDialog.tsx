@@ -34,7 +34,6 @@ export default function EditStudentDialog({ student }: Props) {
   const form = useForm<UpdateStudentInput>({
     resolver: zodResolver(updateStudentSchema),
     defaultValues: {
-      code: student.code,
       firstName: student.firstName,
       lastName: student.lastName,
       birthDate: student.birthDate,
@@ -98,14 +97,7 @@ export default function EditStudentDialog({ student }: Props) {
               )} />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <FormField control={form.control} name="code" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Código</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+            <div className="grid grid-cols-2 gap-3">
               <FormField control={form.control} name="birthDate" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nacimiento</FormLabel>
