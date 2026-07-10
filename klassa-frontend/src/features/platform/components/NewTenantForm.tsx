@@ -153,7 +153,7 @@ export default function NewTenantForm({ plans }: Props) {
                   >
                     {plans.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name}
+                        {p.name} — S/ {p.priceMonthly.toLocaleString('es-PE', { minimumFractionDigits: 0 })}/mes — hasta {p.maxStudents.toLocaleString()} alumnos
                       </option>
                     ))}
                   </select>

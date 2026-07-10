@@ -21,8 +21,7 @@ export default function StatsCards({ tenants }: Props) {
         <p className="text-xs font-medium text-ghost">Activos</p>
         <p className="mt-2 text-3xl font-medium text-ink">{active}</p>
         <div className="mt-2 inline-flex items-center gap-1 bg-accent/30 px-2 py-0.5 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-ink/50"></span>
-          <span className="text-xs text-ink/70">en línea</span>
+          <span className="text-xs text-ink/70">suscripción activa</span>
         </div>
       </div>
 
