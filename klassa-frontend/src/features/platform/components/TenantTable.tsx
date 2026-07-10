@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { updateTenantStatus } from '../actions'
 import TenantStatusBadge from './TenantStatusBadge'
 import type { TenantResponse, TenantStatus } from '../types'
+import { getTenantStatusActions } from '../statusActions'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import {
   Table,
@@ -31,20 +32,6 @@ type PendingAction = {
   irreversible?: boolean
 }
 
-type ActionDef = { label: string; next: TenantStatus; danger: boolean; irreversible?: boolean }
-
-function getStatusActions(status: TenantStatus): ActionDef[] {
-  const cancel: ActionDef = { label: 'Cancelar', next: 'CANCELLED', danger: true, irreversible: true }
-  if (status === 'ACTIVE') return [{ label: 'Suspender', next: 'SUSPENDED', danger: true }, cancel]
-  if (status === 'TRIAL') return [
-    { label: 'Activar', next: 'ACTIVE', danger: false },
-    { label: 'Suspender', next: 'SUSPENDED', danger: true },
-    cancel,
-  ]
-  if (status === 'SUSPENDED') return [{ label: 'Activar', next: 'ACTIVE', danger: false }, cancel]
-  return []
-}
-
 function StatusActions({
   tenant,
   onRequest,
@@ -52,7 +39,7 @@ function StatusActions({
   tenant: TenantResponse
   onRequest: (action: PendingAction) => void
 }) {
-  const actions = getStatusActions(tenant.status)
+  const actions = getTenantStatusActions(tenant.status)
 
   if (!actions.length) return <span className="text-ghost text-xs">—</span>
 

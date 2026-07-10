@@ -5,22 +5,8 @@ import { toast } from 'sonner'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import TenantStatusBadge from './TenantStatusBadge'
 import { updateTenantStatus, updateTenantPlan } from '../actions'
-import type { TenantResponse, TenantStatus, Plan } from '../types'
-
-type StatusAction = { label: string; next: TenantStatus; danger: boolean; irreversible?: boolean }
-
-const CANCEL: StatusAction = { label: 'Cancelar', next: 'CANCELLED', danger: true, irreversible: true }
-
-function getActions(status: TenantStatus): StatusAction[] {
-  if (status === 'ACTIVE') return [{ label: 'Suspender', next: 'SUSPENDED', danger: true }, CANCEL]
-  if (status === 'TRIAL') return [
-    { label: 'Activar', next: 'ACTIVE', danger: false },
-    { label: 'Suspender', next: 'SUSPENDED', danger: true },
-    CANCEL,
-  ]
-  if (status === 'SUSPENDED') return [{ label: 'Activar', next: 'ACTIVE', danger: false }, CANCEL]
-  return []
-}
+import { getTenantStatusActions, type TenantStatusAction } from '../statusActions'
+import type { TenantResponse, Plan } from '../types'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es', { day: '2-digit', month: 'long', year: 'numeric' })
@@ -33,12 +19,12 @@ interface Props {
 
 export default function TenantDetailClient({ tenant: initial, plans }: Props) {
   const [tenant, setTenant] = useState(initial)
-  const [pending, setPending] = useState<StatusAction | null>(null)
+  const [pending, setPending] = useState<TenantStatusAction | null>(null)
   const [selectedPlanId, setSelectedPlanId] = useState(initial.planId)
   const [isStatusPending, startStatusTransition] = useTransition()
   const [isPlanPending, startPlanTransition] = useTransition()
 
-  const actions = getActions(tenant.status)
+  const actions = getTenantStatusActions(tenant.status)
   const planChanged = selectedPlanId !== tenant.planId
 
   function handleStatusConfirm() {

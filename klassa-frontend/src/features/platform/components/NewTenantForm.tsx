@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Check, Copy } from 'lucide-react'
+import { toast } from 'sonner'
 import { newTenantSchema, type NewTenantInput } from '../schemas'
 import { createTenant } from '../actions'
 import type { Plan, TenantProvisionResponse } from '../types'
@@ -26,6 +28,15 @@ export default function NewTenantForm({ plans }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [result, setResult] = useState<TenantProvisionResponse | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  async function handleCopyPassword() {
+    if (!result) return
+    await navigator.clipboard.writeText(result.tempPassword)
+    setCopied(true)
+    toast.success('Contraseña copiada')
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const form = useForm<NewTenantInput>({
     resolver: zodResolver(newTenantSchema),
@@ -74,9 +85,19 @@ export default function NewTenantForm({ plans }: Props) {
               {result.tenant.subdomain}
             </code>
             <p className="text-sm text-ghost mt-2">Contraseña temporal del admin</p>
-            <code className="text-lg font-mono bg-ink text-accent rounded-xl px-4 py-2.5 tracking-widest w-fit">
-              {result.tempPassword}
-            </code>
+            <div className="flex items-center gap-2">
+              <code className="text-lg font-mono bg-ink text-accent rounded-xl px-4 py-2.5 tracking-widest w-fit">
+                {result.tempPassword}
+              </code>
+              <button
+                type="button"
+                onClick={handleCopyPassword}
+                aria-label="Copiar contraseña"
+                className="p-2.5 rounded-xl border border-line bg-white text-ink hover:bg-surface transition-colors duration-150"
+              >
+                {copied ? <Check size={16} className="text-accent" /> : <Copy size={16} />}
+              </button>
+            </div>
           </div>
         </div>
         <Button variant="outline" onClick={() => router.push('/platform/dashboard')}>
