@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, BookOpen, ClipboardList, Receipt, UserCheck } from 'lucide-react'
+import { LayoutDashboard, Users, BookOpen, ClipboardList, Receipt, UserCheck, CalendarDays } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { UserRole } from '@/shared/store/session'
 
@@ -14,6 +14,7 @@ export const TENANT_NAV_ITEMS: NavItem[] = [
   { href: '/students',       icon: Users,           label: 'Alumnos',    roles: ['ADMIN', 'TEACHER'] },
   { href: '/academic-years', icon: BookOpen,        label: 'Académico',  roles: ['ADMIN', 'TEACHER'] },
   { href: '/attendance',     icon: ClipboardList,   label: 'Asistencia', roles: ['ADMIN', 'TEACHER'] },
+  { href: '/calendar',       icon: CalendarDays,    label: 'Calendario', roles: ['ADMIN', 'TEACHER', 'TREASURER', 'PARENT'] },
   { href: '/billing',        icon: Receipt,         label: 'Cobros',     roles: ['ADMIN', 'TREASURER'] },
   { href: '/users',          icon: UserCheck,       label: 'Usuarios',   roles: ['ADMIN'] },
 ]

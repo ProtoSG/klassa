@@ -4,10 +4,10 @@ import { COOKIE_NAME } from '@/shared/lib/constants'
 const PUBLIC_PATHS = ['/auth/login', '/auth/change-password', '/platform/login', '/']
 
 const ROLE_ALLOWED: Record<string, string[]> = {
-  ADMIN:     ['/dashboard', '/students', '/academic-years', '/attendance', '/billing', '/users'],
-  TEACHER:   ['/dashboard', '/students', '/academic-years', '/attendance'],
-  TREASURER: ['/dashboard', '/billing'],
-  PARENT:    ['/dashboard'],
+  ADMIN:     ['/dashboard', '/students', '/academic-years', '/attendance', '/calendar', '/billing', '/users'],
+  TEACHER:   ['/dashboard', '/students', '/academic-years', '/attendance', '/calendar'],
+  TREASURER: ['/dashboard', '/calendar', '/billing'],
+  PARENT:    ['/dashboard', '/calendar'],
 }
 
 function getRoleFromToken(token: string): string | null {
