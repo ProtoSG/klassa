@@ -7,7 +7,9 @@ import com.klassa.academic.dto.ScoreRequest;
 import com.klassa.academic.dto.ScoreResponse;
 import com.klassa.shared.security.SecurityUser;
 import com.klassa.user.UserRepository;
+import com.klassa.user.UserRole;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -23,17 +25,20 @@ public class ScoreService {
     private final EnrollmentRepository enrollmentRepository;
     private final SubjectRepository subjectRepository;
     private final UserRepository userRepository;
+    private final TeachingAssignmentRepository teachingAssignmentRepository;
     private final AcademicMapper academicMapper;
 
     public ScoreService(ScoreRepository scoreRepository,
                         EnrollmentRepository enrollmentRepository,
                         SubjectRepository subjectRepository,
                         UserRepository userRepository,
+                        TeachingAssignmentRepository teachingAssignmentRepository,
                         AcademicMapper academicMapper) {
         this.scoreRepository = scoreRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.subjectRepository = subjectRepository;
         this.userRepository = userRepository;
+        this.teachingAssignmentRepository = teachingAssignmentRepository;
         this.academicMapper = academicMapper;
     }
 
@@ -49,6 +54,16 @@ public class ScoreService {
         Subject subject = subjectRepository.findById(request.subjectId())
                 .orElseThrow(() -> new EntityNotFoundException("Subject", request.subjectId()));
 
+        SecurityUser principal = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .map(auth -> (SecurityUser) auth.getPrincipal())
+                .orElse(null);
+
+        if (principal != null && principal.role() == UserRole.TEACHER
+                && !teachingAssignmentRepository.existsBySectionIdAndSubjectIdAndTeacherId(
+                        enrollment.getSection().getId(), subject.getId(), principal.userId())) {
+            throw new AccessDeniedException("No estás asignado a esta materia en esta sección");
+        }
+
         Score score = scoreRepository
                 .findByEnrollmentIdAndSubjectIdAndPeriod(
                         request.enrollmentId(), request.subjectId(), request.period())
@@ -60,10 +75,9 @@ public class ScoreService {
         score.setScore(request.score());
 
         // Set createdBy from security context
-        Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
-                .map(auth -> (SecurityUser) auth.getPrincipal())
-                .flatMap(su -> userRepository.findById(su.userId()))
-                .ifPresent(score::setCreatedBy);
+        if (principal != null) {
+            userRepository.findById(principal.userId()).ifPresent(score::setCreatedBy);
+        }
 
         return academicMapper.toScoreResponse(scoreRepository.save(score));
     }

@@ -38,4 +38,12 @@ public interface AcademicMapper {
     @Mapping(target = "subjectId", source = "subject.id")
     @Mapping(target = "subjectName", source = "subject.name")
     ScoreResponse toScoreResponse(Score score);
+
+    @Mapping(target = "sectionId", source = "section.id")
+    @Mapping(target = "sectionName", source = "section.name")
+    @Mapping(target = "subjectId", source = "subject.id")
+    @Mapping(target = "subjectName", source = "subject.name")
+    @Mapping(target = "teacherId", source = "teacher.id")
+    @Mapping(target = "teacherName", expression = "java(assignment.getTeacher().fullName())")
+    TeachingAssignmentResponse toTeachingAssignmentResponse(TeachingAssignment assignment);
 }
