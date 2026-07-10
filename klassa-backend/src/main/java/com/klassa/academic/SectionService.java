@@ -83,6 +83,8 @@ public class SectionService {
             User teacher = userRepository.findById(request.homeroomTeacherId())
                     .orElseThrow(() -> new EntityNotFoundException("User", request.homeroomTeacherId()));
             section.setHomeroomTeacher(teacher);
+        } else {
+            section.setHomeroomTeacher(null);
         }
         if (request.maxCapacity() != null) {
             section.setMaxCapacity(request.maxCapacity());
