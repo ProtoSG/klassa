@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { BACKEND_URL, COOKIE_NAME, COOKIE_SUBDOMAIN } from '@/shared/lib/constants'
 import type { NewStudentInput, UpdateStudentInput as UpdateStudentSchemaInput, UpdateFamilyInput as UpdateFamilySchemaInput } from './schemas'
-import type { StudentResponse, FamilyResponse, StudentStatus } from './types'
+import type { StudentResponse, FamilyResponse, StudentStatus, ImportResult } from './types'
 
 async function tenantFetch<T>(path: string, method: string, body?: unknown): Promise<T> {
   const jar = await cookies()
@@ -88,6 +88,30 @@ export async function changeStudentStatus(id: number, status: StudentStatus): Pr
   revalidatePath('/students')
   revalidatePath(`/students/${id}`)
   return student
+}
+
+export async function importStudents(formData: FormData): Promise<ImportResult> {
+  const jar = await cookies()
+  const token = jar.get(COOKIE_NAME)?.value
+  const subdomain = jar.get(COOKIE_SUBDOMAIN)?.value
+
+  const res = await fetch(`${BACKEND_URL}/api/students/import`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Cookie: `${COOKIE_NAME}=${token}` } : {}),
+      ...(subdomain ? { 'X-Tenant-Subdomain': subdomain } : {}),
+    },
+    body: formData,
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => null)
+    throw new Error(err?.message ?? `Error ${res.status}`)
+  }
+
+  const data = await res.json()
+  revalidatePath('/students')
+  return data.data as ImportResult
 }
 
 export async function uploadStudentPhoto(id: number, formData: FormData): Promise<void> {

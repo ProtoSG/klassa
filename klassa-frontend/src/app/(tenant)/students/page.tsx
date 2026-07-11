@@ -3,6 +3,7 @@ import { getStudentPage } from '@/features/students/api'
 import StudentTable from '@/features/students/components/StudentTable'
 import StudentsFilters from '@/features/students/components/StudentsFilters'
 import NewStudentDialog from '@/features/students/components/NewStudentDialog'
+import ImportStudentsDialog from '@/features/students/components/ImportStudentsDialog'
 import Pagination from '@/shared/components/Pagination'
 import { getMe } from '@/features/auth/actions'
 
@@ -26,6 +27,7 @@ export default async function StudentsPage({
 
   const session = await getMe()
   const canManage = session?.user.role !== 'TEACHER'
+  const isAdmin = session?.user.role === 'ADMIN'
 
   const data = await getStudentPage({
     page,
@@ -44,7 +46,10 @@ export default async function StudentsPage({
             {data ? `${data.totalElements} alumno${data.totalElements !== 1 ? 's' : ''} en total` : 'Gestión de estudiantes'}
           </p>
         </div>
-        {canManage && <NewStudentDialog />}
+        <div className="flex items-center gap-2">
+          {isAdmin && <ImportStudentsDialog />}
+          {canManage && <NewStudentDialog />}
+        </div>
       </div>
 
       {/* Filters — client */}

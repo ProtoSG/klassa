@@ -63,3 +63,16 @@ export interface PageResponse<T> {
   page: number
   size: number
 }
+
+export interface ImportRowError {
+  rowNumber: number
+  field: string
+  message: string
+}
+
+export interface ImportResult {
+  totalRows: number
+  successCount: number
+  failureCount: number
+  errors: ImportRowError[]
+}
