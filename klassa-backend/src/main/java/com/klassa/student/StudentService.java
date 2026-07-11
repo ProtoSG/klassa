@@ -10,11 +10,14 @@ import com.klassa.shared.storage.StorageService;
 import com.klassa.shared.web.PageResponse;
 import com.klassa.student.dto.FamilyRequest;
 import com.klassa.student.dto.FamilyResponse;
+import com.klassa.student.dto.ImportResult;
+import com.klassa.student.dto.ImportRowError;
 import com.klassa.student.dto.StudentRequest;
 import com.klassa.student.dto.StudentResponse;
 import com.klassa.user.UserRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -23,7 +26,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Transactional(readOnly = true)
@@ -34,20 +39,29 @@ public class StudentService {
     private static final long MAX_PHOTO_BYTES = 5L * 1024 * 1024;
     private static final Duration PHOTO_PRESIGN_TTL = Duration.ofHours(1);
 
+    private static final List<String> ALLOWED_IMPORT_TYPES =
+            List.of("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    private static final int MAX_IMPORT_ROWS = 2000;
+    private static final List<String> EXPECTED_IMPORT_HEADERS =
+            List.of("Nombres", "Apellidos", "Fecha de nacimiento", "Sexo (M/F)");
+
     private final StudentRepository studentRepository;
     private final FamilyRepository familyRepository;
     private final StudentMapper studentMapper;
     private final StorageService storageService;
     private final StudentCodeGenerator studentCodeGenerator;
+    private final StudentImportService studentImportService;
+    private final StudentImportRowParser importRowParser = new StudentImportRowParser();
 
     public StudentService(StudentRepository studentRepository, FamilyRepository familyRepository,
                           StudentMapper studentMapper, StorageService storageService,
-                          StudentCodeGenerator studentCodeGenerator) {
+                          StudentCodeGenerator studentCodeGenerator, StudentImportService studentImportService) {
         this.studentRepository = studentRepository;
         this.familyRepository = familyRepository;
         this.studentMapper = studentMapper;
         this.storageService = storageService;
         this.studentCodeGenerator = studentCodeGenerator;
+        this.studentImportService = studentImportService;
     }
 
     // Redis cache is shared across tenants, but entity ids are only unique per tenant schema.
@@ -67,6 +81,73 @@ public class StudentService {
         Student student = buildStudent(new Student(), request);
         student.setCode(code);
         return toResponse(studentRepository.save(student));
+    }
+
+    // No @Transactional here on purpose: each row is persisted through studentImportService's own
+    // REQUIRES_NEW transaction (see StudentImportService), so one bad row never rolls back rows
+    // already committed earlier in the same file. "empty file" (zero data rows) can only be known
+    // once the whole stream has been read.
+    //
+    // The sheet is read with StudentImportSheetReader's SAX/streaming API rather than a DOM
+    // XSSFWorkbook: rows are handed to the callback below one at a time and never accumulated, so
+    // a small-but-highly-compressible file can't balloon into a huge in-memory object graph.
+    //
+    // Two-phase on purpose: since every row commits immediately in its own transaction as it
+    // streams in, checking the row-count cap *while* persisting would mean a file with (say) 2100
+    // rows commits 2000 students before the 2001st row trips the cap and the request fails --
+    // leaving an admin staring at an error that says the whole import failed despite 2000 new
+    // students existing. Phase 1 streams the file purely to validate the header and enforce the
+    // cap (throwing before touching the database at all); phase 2 -- reached only if phase 1
+    // didn't throw -- re-reads the file (MultipartFile#getInputStream() is safe to call more than
+    // once; Spring's multipart abstraction backs it with a temp file/byte buffer) and actually
+    // parses + persists each row exactly as before.
+    @CacheEvict(value = "students", allEntries = true)
+    public ImportResult importStudents(MultipartFile file) {
+        validateImportFile(file);
+
+        StudentImportSheetReader reader = new StudentImportSheetReader(EXPECTED_IMPORT_HEADERS, MAX_IMPORT_ROWS);
+
+        try {
+            reader.validate(file);
+        } catch (ImportRowLimitExceededException e) {
+            throw new BusinessRuleException(ErrorCode.IMPORT_TOO_MANY_ROWS, MAX_IMPORT_ROWS);
+        } catch (ImportFileUnreadableException e) {
+            throw new BusinessRuleException(ErrorCode.IMPORT_UNREADABLE_FILE);
+        }
+
+        AtomicInteger totalRows = new AtomicInteger();
+        AtomicInteger successCount = new AtomicInteger();
+        List<ImportRowError> errors = new ArrayList<>();
+
+        try {
+            reader.read(file, row -> {
+                if (isImportRowBlank(row)) {
+                    return;
+                }
+                totalRows.incrementAndGet();
+                try {
+                    StudentImportRowParser.ParsedRow parsed = importRowParser.parse(row);
+                    studentImportService.importRow(parsed);
+                    successCount.incrementAndGet();
+                } catch (RowValidationException e) {
+                    errors.addAll(e.getErrors());
+                } catch (DataIntegrityViolationException e) {
+                    log.warn("Data integrity violation importing student row {}", row.rowNumber(), e);
+                    errors.add(new ImportRowError(row.rowNumber(), "", "Conflicto de datos al guardar la fila"));
+                }
+            });
+        } catch (ImportRowLimitExceededException e) {
+            // Defensive only: phase 1 above already validated the row count against the same
+            // header/file, so this should be unreachable in practice.
+            throw new BusinessRuleException(ErrorCode.IMPORT_TOO_MANY_ROWS, MAX_IMPORT_ROWS);
+        } catch (ImportFileUnreadableException e) {
+            throw new BusinessRuleException(ErrorCode.IMPORT_UNREADABLE_FILE);
+        }
+
+        if (totalRows.get() == 0) {
+            throw new BusinessRuleException(ErrorCode.IMPORT_EMPTY_FILE);
+        }
+        return new ImportResult(totalRows.get(), successCount.get(), errors.size(), errors);
     }
 
     @Cacheable(value = "students", key = TENANT_KEY)
@@ -189,6 +270,28 @@ public class StudentService {
         if (file.getSize() > MAX_PHOTO_BYTES) {
             throw new BusinessRuleException(ErrorCode.PHOTO_TOO_LARGE);
         }
+    }
+
+    private void validateImportFile(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new BusinessRuleException(ErrorCode.IMPORT_EMPTY_FILE);
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_IMPORT_TYPES.contains(contentType)) {
+            throw new BusinessRuleException(ErrorCode.IMPORT_INVALID_FORMAT);
+        }
+    }
+
+    // A data row counts as blank (and is skipped without affecting totalRows/successCount) only
+    // when every one of the 4 template columns has neither text nor a resolved Excel date.
+    private boolean isImportRowBlank(RawImportRow row) {
+        for (int i = 0; i < RawImportRow.COLUMN_COUNT; i++) {
+            RawImportRow.RawCell cell = row.cell(i);
+            if (cell.excelDate() != null) return false;
+            String text = cell.text();
+            if (text != null && !text.isBlank()) return false;
+        }
+        return true;
     }
 
     private Student buildStudent(Student student, StudentRequest request) {

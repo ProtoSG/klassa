@@ -3,6 +3,7 @@ package com.klassa.student;
 import com.klassa.shared.security.SecurityUser;
 import com.klassa.shared.web.ApiResponse;
 import com.klassa.shared.web.PageResponse;
+import com.klassa.student.dto.ImportResult;
 import com.klassa.student.dto.StudentRequest;
 import com.klassa.student.dto.StudentResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -35,6 +36,12 @@ public class StudentController {
     public ResponseEntity<ApiResponse<StudentResponse>> create(@Valid @RequestBody StudentRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(studentService.create(request)));
+    }
+
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<ImportResult>> importStudents(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(ApiResponse.ok(studentService.importStudents(file)));
     }
 
     @GetMapping("/{id}")

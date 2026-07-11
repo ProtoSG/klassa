@@ -22,6 +22,13 @@ public enum ErrorCode {
     PHOTO_INVALID_FORMAT("Formatos de imagen permitidos: JPEG, PNG"),
     PHOTO_TOO_LARGE("La imagen no debe superar 5 MB"),
 
+    // --- Student import ---
+    IMPORT_INVALID_FORMAT("El archivo debe ser un Excel (.xlsx)"),
+    IMPORT_EMPTY_FILE("El archivo está vacío"),
+    IMPORT_UNREADABLE_FILE("No se pudo leer el archivo. Verifica que sea un Excel válido"),
+    IMPORT_INVALID_TEMPLATE("El archivo no coincide con la plantilla esperada (encabezados incorrectos)"),
+    IMPORT_TOO_MANY_ROWS("El archivo supera el máximo de %d filas permitidas"),
+
     // --- Academic year ---
     ACADEMIC_YEAR_ALREADY_CLOSED("El año académico ya está cerrado"),
     ACADEMIC_YEAR_INVALID_DATES("La fecha de fin debe ser posterior a la fecha de inicio"),
