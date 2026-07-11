@@ -1,17 +1,20 @@
-import type { FamilyResponse } from '../types'
+import type { FamilyResponse, StudentResponse } from '../types'
 import EditFamilyDialog from './EditFamilyDialog'
+import AddFamilyDialog from './AddFamilyDialog'
 
 interface Props {
+  student: StudentResponse
   family: FamilyResponse | null
   canManage: boolean
 }
 
-export default function FamilyInfoCard({ family, canManage }: Props) {
+export default function FamilyInfoCard({ student, family, canManage }: Props) {
   if (!family) {
     return (
       <div className="rounded-2xl border border-line bg-white p-5 shadow-card">
         <h2 className="text-sm font-medium text-ink mb-4">Información Familiar</h2>
-        <p className="text-sm text-ghost">No hay información familiar registrada.</p>
+        <p className="text-sm text-ghost mb-3">No hay información familiar registrada.</p>
+        {canManage && <AddFamilyDialog student={student} />}
       </div>
     )
   }

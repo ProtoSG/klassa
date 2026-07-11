@@ -40,7 +40,7 @@ export default async function StudentDetailPage({ params }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <StudentInfoCard student={student} />
-        <FamilyInfoCard family={family} canManage={canManage} />
+        <FamilyInfoCard student={student} family={family} canManage={canManage} />
       </div>
 
       <StudentEnrollments enrollments={enrollments} canManage={canManage} />

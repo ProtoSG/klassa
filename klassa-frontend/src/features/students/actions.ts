@@ -68,6 +68,30 @@ export async function updateStudent(id: number, input: UpdateStudentSchemaInput,
   return student
 }
 
+export async function addFamily(student: StudentResponse, input: UpdateFamilySchemaInput): Promise<StudentResponse> {
+  const family = await tenantFetch<{ id: number }>('/families', 'POST', {
+    guardianName: input.guardianName,
+    guardianEmail: input.guardianEmail ?? '',
+    guardianPhone: input.guardianPhone ?? '',
+    address: input.address ?? '',
+    emergencyContact: input.emergencyContact ?? '',
+    emergencyPhone: input.emergencyPhone ?? '',
+  })
+
+  const updated = await tenantFetch<StudentResponse>(`/students/${student.id}`, 'PUT', {
+    firstName: student.firstName,
+    lastName: student.lastName,
+    birthDate: student.birthDate,
+    gender: student.gender,
+    familyId: family.id,
+    photoUrl: student.photoUrl,
+  })
+
+  revalidatePath('/students')
+  revalidatePath(`/students/${student.id}`)
+  return updated
+}
+
 export async function updateFamily(id: number, input: UpdateFamilySchemaInput): Promise<FamilyResponse> {
   const family = await tenantFetch<FamilyResponse>(`/families/${id}`, 'PUT', {
     guardianName: input.guardianName,
