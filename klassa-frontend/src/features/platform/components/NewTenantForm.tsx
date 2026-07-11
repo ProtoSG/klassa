@@ -70,7 +70,7 @@ export default function NewTenantForm({ plans }: Props) {
   if (result) {
     return (
       <div className="flex flex-col gap-6">
-        <div className="rounded-2xl border border-accent bg-accent/20 p-6">
+        <div>
           <h2 className="font-medium text-ink text-lg mb-1">
             Colegio creado exitosamente
           </h2>
@@ -153,7 +153,7 @@ export default function NewTenantForm({ plans }: Props) {
                   >
                     {plans.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name} — S/ {p.priceMonthly.toLocaleString('es-PE', { minimumFractionDigits: 0 })}/mes — hasta {p.maxStudents.toLocaleString()} alumnos
+                        {p.name} — S/ {p.priceMonthly.toLocaleString('es-PE', { minimumFractionDigits: 0 })}/mes — hasta {p.maxStudents.toLocaleString('es-PE')} alumnos
                       </option>
                     ))}
                   </select>

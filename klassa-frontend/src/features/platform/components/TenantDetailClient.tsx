@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import TenantStatusBadge from './TenantStatusBadge'
-import { updateTenantStatus, updateTenantPlan } from '../actions'
+import { updateTenantStatus, updateTenantPlan, purgeTenantData } from '../actions'
 import { getTenantStatusActions, type TenantStatusAction } from '../statusActions'
 import type { TenantResponse, Plan } from '../types'
 
@@ -20,9 +20,11 @@ interface Props {
 export default function TenantDetailClient({ tenant: initial, plans }: Props) {
   const [tenant, setTenant] = useState(initial)
   const [pending, setPending] = useState<TenantStatusAction | null>(null)
+  const [purgePending, setPurgePending] = useState(false)
   const [selectedPlanId, setSelectedPlanId] = useState(initial.planId)
   const [isStatusPending, startStatusTransition] = useTransition()
   const [isPlanPending, startPlanTransition] = useTransition()
+  const [isPurgePending, startPurgeTransition] = useTransition()
 
   const actions = getTenantStatusActions(tenant.status)
   const planChanged = selectedPlanId !== tenant.planId
@@ -39,6 +41,20 @@ export default function TenantDetailClient({ tenant: initial, plans }: Props) {
         toast.error(err instanceof Error ? err.message : 'Error al actualizar estado')
       } finally {
         setPending(null)
+      }
+    })
+  }
+
+  function handlePurgeConfirm() {
+    startPurgeTransition(async () => {
+      try {
+        const updated = await purgeTenantData(tenant.subdomain)
+        setTenant(updated)
+        toast.success('Datos del colegio purgados')
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Error al purgar los datos')
+      } finally {
+        setPurgePending(false)
       }
     })
   }
@@ -97,7 +113,7 @@ export default function TenantDetailClient({ tenant: initial, plans }: Props) {
             >
               {plans.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} — hasta {p.maxStudents.toLocaleString()} alumnos
+                  {p.name} — hasta {p.maxStudents.toLocaleString('es-PE')} alumnos
                 </option>
               ))}
             </select>
@@ -121,6 +137,31 @@ export default function TenantDetailClient({ tenant: initial, plans }: Props) {
         <InfoCard label="Creado" value={formatDate(tenant.createdAt)} />
       </div>
 
+      {/* Data purge — only reachable once the tenant is CANCELLED, and only once */}
+      {tenant.status === 'CANCELLED' && (
+        <div className="rounded-2xl border border-danger/30 bg-danger/5 p-6 shadow-card flex flex-col gap-3">
+          <h2 className="text-sm font-medium text-prose">Datos del colegio</h2>
+          {tenant.purgedAt ? (
+            <p className="text-sm text-ghost">
+              Los datos de este colegio fueron purgados el {formatDate(tenant.purgedAt)}.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-prose">
+                Cancelar no borra los datos del colegio — el registro de alumnos, notas y
+                apoderados sigue intacto. Purgar los datos borra ese registro de forma permanente.
+              </p>
+              <button
+                onClick={() => setPurgePending(true)}
+                className="self-start px-4 py-2 rounded-xl text-sm font-medium bg-danger/10 text-danger hover:bg-danger/20 transition-all duration-150"
+              >
+                Purgar datos
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       <ConfirmDialog
         open={!!pending}
         onClose={() => setPending(null)}
@@ -128,7 +169,7 @@ export default function TenantDetailClient({ tenant: initial, plans }: Props) {
         title={pending ? `${pending.label} colegio` : ''}
         description={
           pending?.irreversible
-            ? `Esta acción cancelará "${tenant.name}" de forma permanente. No se puede deshacer.`
+            ? `Esta acción cancelará "${tenant.name}" de forma permanente. No se puede deshacer. El registro de alumnos, notas y apoderados del colegio no se borra — queda disponible para purgarlo manualmente más tarde si hace falta.`
             : pending?.danger
               ? `"${tenant.name}" perderá acceso hasta ser reactivado.`
               : `Se habilitará el acceso completo para "${tenant.name}".`
@@ -136,6 +177,18 @@ export default function TenantDetailClient({ tenant: initial, plans }: Props) {
         confirmLabel={pending?.label}
         danger={pending?.danger ?? false}
         loading={isStatusPending}
+      />
+
+      <ConfirmDialog
+        open={purgePending}
+        onClose={() => setPurgePending(false)}
+        onConfirm={handlePurgeConfirm}
+        title="Purgar datos del colegio"
+        description={`Esto borra permanentemente el registro de alumnos, notas y apoderados de "${tenant.name}". No se puede deshacer.`}
+        confirmLabel="Purgar datos"
+        confirmText={tenant.subdomain}
+        danger
+        loading={isPurgePending}
       />
     </>
   )

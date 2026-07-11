@@ -44,8 +44,12 @@ export function proxy(req: NextRequest) {
   const isAllowed = allowed.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'))
 
   if (!isAllowed) {
+    // Without this flag the user gets silently bounced to /dashboard with zero explanation —
+    // easy to hit right after a role change, since the client session store only re-syncs on
+    // the next full navigation (see SessionInitializer).
     const dashboardUrl = req.nextUrl.clone()
     dashboardUrl.pathname = '/dashboard'
+    dashboardUrl.searchParams.set('denied', '1')
     return NextResponse.redirect(dashboardUrl)
   }
 

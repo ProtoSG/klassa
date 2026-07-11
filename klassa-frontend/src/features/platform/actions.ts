@@ -84,3 +84,22 @@ export async function updateTenantStatus(
   const body = await res.json()
   return body.data as TenantResponse
 }
+
+export async function purgeTenantData(subdomain: string): Promise<TenantResponse> {
+  const token = await getToken()
+  const res = await fetch(`${BACKEND_URL}/api/tenants/${subdomain}/data`, {
+    method: 'DELETE',
+    headers: {
+      ...(token ? { Cookie: `${COOKIE_NAME}=${token}` } : {}),
+    },
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => null)
+    throw new Error(err?.message ?? 'Error al purgar los datos')
+  }
+
+  revalidatePath(`/platform/tenants/${subdomain}`)
+  const body = await res.json()
+  return body.data as TenantResponse
+}

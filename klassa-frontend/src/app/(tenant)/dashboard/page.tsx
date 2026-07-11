@@ -5,6 +5,7 @@ import { getAcademicYears } from '@/features/academic-years/api'
 import { getMe } from '@/features/auth/actions'
 import TenantDashboardStats from '@/features/tenant/components/TenantDashboardStats'
 import RecentStudents from '@/features/students/components/RecentStudents'
+import AccessDeniedToast from '@/features/tenant/components/AccessDeniedToast'
 import type { UserRole } from '@/shared/store/session'
 
 const QUICK_ACTIONS = [
@@ -14,7 +15,12 @@ const QUICK_ACTIONS = [
   { href: '/billing', icon: Receipt, label: 'Cobros', desc: 'Pagos e invoices', roles: ['ADMIN', 'TREASURER'] as UserRole[] },
 ]
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ denied?: string }>
+}) {
+  const { denied } = await searchParams
   const session = await getMe()
   const quickActions = QUICK_ACTIONS.filter((a) => session && a.roles.includes(session.user.role))
 
@@ -28,6 +34,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6 px-4 md:px-8 max-w-7xl mx-auto">
+      <AccessDeniedToast show={denied === '1'} />
       <div className="flex items-center gap-3">
         <div>
           <h1 className="text-2xl font-medium text-ink">Dashboard</h1>

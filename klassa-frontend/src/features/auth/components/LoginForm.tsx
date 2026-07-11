@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useEffect, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -32,6 +32,14 @@ export default function LoginForm() {
       password: '',
     },
   })
+
+  useEffect(() => {
+    const blocked = params.get('blocked')
+    if (blocked) {
+      form.setError('root', { message: blocked })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function onSubmit(values: LoginInput) {
     startTransition(async () => {

@@ -74,7 +74,7 @@ export default async function Pricing() {
                     <span className={`mb-1 text-sm ${featured ? 'text-white/50' : 'text-ghost'}`}>/mes</span>
                   </div>
                   <p className={`text-sm mt-1 ${featured ? 'text-white/50' : 'text-ghost'}`}>
-                    {unlimited ? 'Estudiantes ilimitados' : `Hasta ${plan.maxStudents.toLocaleString()} estudiantes`}
+                    {unlimited ? 'Estudiantes ilimitados' : `Hasta ${plan.maxStudents.toLocaleString('es-PE')} estudiantes`}
                   </p>
                 </div>
 

@@ -4,11 +4,13 @@ import BottomNav from '@/shared/components/BottomNav'
 import TenantHeader from '@/features/tenant/components/TenantHeader'
 import SessionInitializer from '@/shared/components/SessionInitializer'
 import { Toaster } from '@/components/ui/sonner'
-import { getMe } from '@/features/auth/actions'
+import { getSessionOrBlockReason } from '@/features/auth/actions'
 
 export default async function TenantLayout({ children }: { children: ReactNode }) {
-  const session = await getMe()
-  if (!session) redirect('/auth/login')
+  const session = await getSessionOrBlockReason()
+  if (!session.ok) {
+    redirect(session.blocked ? `/auth/login?blocked=${encodeURIComponent(session.message)}` : '/auth/login')
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas">

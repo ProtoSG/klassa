@@ -104,6 +104,45 @@ export async function logout(): Promise<void> {
   jar.delete(COOKIE_SUBDOMAIN)
 }
 
+type SessionResult =
+  | { ok: true; user: SessionUser; subdomain: string }
+  | { ok: false; blocked: true; message: string }
+  | { ok: false; blocked: false }
+
+/**
+ * Like `getMe`, but distinguishes a tenant blocked (SUSPENDED/CANCELLED, rejected by
+ * TenantInterceptor with 403) from a plain missing/expired session, so callers can show
+ * the specific reason instead of a silent redirect to login.
+ */
+export async function getSessionOrBlockReason(): Promise<SessionResult> {
+  try {
+    const jar = await cookies()
+    const token = jar.get(COOKIE_NAME)?.value
+    const subdomain = jar.get(COOKIE_SUBDOMAIN)?.value
+    if (!token) return { ok: false, blocked: false }
+    const res = await fetch(`${BACKEND_URL}/api/auth/me`, {
+      headers: { Cookie: `${COOKIE_NAME}=${token}` },
+      cache: 'no-store',
+    })
+    if (!res.ok) {
+      if (res.status === 403) {
+        const err = await res.json().catch(() => null)
+        if (err?.message) return { ok: false, blocked: true, message: err.message }
+      }
+      return { ok: false, blocked: false }
+    }
+    const data = await res.json()
+    const login = data.data as LoginResponse
+    return {
+      ok: true,
+      user: { email: login.email, fullName: login.fullName, role: login.role, tenantId: login.tenantId },
+      subdomain: subdomain ?? login.tenantId,
+    }
+  } catch {
+    return { ok: false, blocked: false }
+  }
+}
+
 export async function getMe(): Promise<{ user: SessionUser; subdomain: string } | null> {
   try {
     const jar = await cookies()
