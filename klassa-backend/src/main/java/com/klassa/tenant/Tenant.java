@@ -39,6 +39,11 @@ public class Tenant extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    // Set once a platform admin manually purges a CANCELLED tenant's schema. Null means
+    // the tenant's data (if any) is still intact, regardless of status.
+    @Column
+    private LocalDateTime purgedAt;
+
     private static final Map<TenantStatus, Set<TenantStatus>> VALID_TRANSITIONS = Map.of(
         TenantStatus.TRIAL,     Set.of(TenantStatus.ACTIVE, TenantStatus.SUSPENDED, TenantStatus.CANCELLED),
         TenantStatus.ACTIVE,    Set.of(TenantStatus.SUSPENDED, TenantStatus.CANCELLED),

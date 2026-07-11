@@ -9,6 +9,8 @@ import com.klassa.user.dto.UserRequest;
 import com.klassa.user.dto.UserResponse;
 import com.klassa.user.dto.UserUpdateRequest;
 import com.klassa.shared.web.PageResponse;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -116,6 +118,8 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "userActive",
+            key = "T(com.klassa.shared.multitenancy.TenantContext).getCurrentTenant() + ':' + #id")
     public void deactivate(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User", id));
@@ -124,11 +128,21 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "userActive",
+            key = "T(com.klassa.shared.multitenancy.TenantContext).getCurrentTenant() + ':' + #id")
     public UserResponse activate(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User", id));
         user.setActive(true);
         return userMapper.toResponse(userRepository.save(user));
+    }
+
+    // User ids are only unique within a tenant's own schema, so the cache key must include the
+    // tenant — otherwise user #5 in one colegio would read/evict user #5's status in another.
+    @Cacheable(value = "userActive",
+            key = "T(com.klassa.shared.multitenancy.TenantContext).getCurrentTenant() + ':' + #id")
+    public boolean isActive(Long id) {
+        return userRepository.findById(id).map(User::getActive).orElse(false);
     }
 
     @Transactional

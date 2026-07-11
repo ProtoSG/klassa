@@ -57,6 +57,9 @@ public enum ErrorCode {
     // --- Tenant ---
     SUBDOMAIN_TAKEN("El subdominio '%s' ya está en uso"),
     INVALID_TENANT_TRANSITION("No se puede cambiar el estado de %s a %s"),
+    PLAN_BELOW_CURRENT_USAGE("El colegio tiene %d alumnos activos, más que el límite de %d del nuevo plan"),
+    TENANT_NOT_CANCELLED("Solo se pueden purgar los datos de un colegio cancelado"),
+    TENANT_ALREADY_PURGED("Los datos de este colegio ya fueron purgados"),
 
     // --- User / auth ---
     EMAIL_TAKEN("El correo '%s' ya está registrado"),

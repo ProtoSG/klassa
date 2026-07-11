@@ -18,6 +18,8 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     boolean existsByIdAndFamilyGuardianUserId(Long id, Long userId);
 
+    long countByStatus(StudentStatus status);
+
     @EntityGraph(attributePaths = "family")
     List<Student> findAllByFamilyId(Long familyId);
 
