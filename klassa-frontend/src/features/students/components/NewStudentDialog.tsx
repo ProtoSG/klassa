@@ -89,6 +89,18 @@ export default function NewStudentDialog() {
     if (ok) setStep((s) => s + 1)
   }
 
+  // Steps 0/1's required fields are enough to pass the whole schema (step 2's emergency fields
+  // are optional), so pressing Enter in any earlier step would otherwise trigger a native form
+  // submit that creates the student before the user ever reaches the emergency step. Treat Enter
+  // as "Siguiente" on non-final steps instead of letting it implicitly submit.
+  function handleFormKeyDown(e: React.KeyboardEvent<HTMLFormElement>) {
+    if (e.key !== 'Enter' || (e.target as HTMLElement).tagName === 'TEXTAREA') return
+    if (step < STEPS.length - 1) {
+      e.preventDefault()
+      handleNext()
+    }
+  }
+
   async function uploadPhoto(studentId: number) {
     if (!photo) return
     const fd = new FormData()
@@ -218,7 +230,7 @@ export default function NewStudentDialog() {
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} onKeyDown={handleFormKeyDown} className="flex flex-col gap-4">
 
             {/* Step 0 — Alumno */}
             {step === 0 && (
