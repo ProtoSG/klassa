@@ -38,6 +38,12 @@ export default function NewStudentDialog() {
   const [isPending, startTransition] = useTransition()
   const subdomain = useSession((s) => s.subdomain)
 
+  // Set once `createStudent` succeeds. From that point on the student already exists — if the
+  // photo upload then fails, we must NOT let the user resubmit the form (that would create a
+  // second Family+Student for the same person). Instead we lock the form and only offer to
+  // retry the photo or finish without one.
+  const [createdStudentId, setCreatedStudentId] = useState<number | null>(null)
+
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -69,6 +75,7 @@ export default function NewStudentDialog() {
     if (isPending) return
     setOpen(false)
     setStep(0)
+    setCreatedStudentId(null)
     form.reset()
     if (photoPreview) URL.revokeObjectURL(photoPreview)
     setPhoto(null)
@@ -82,33 +89,65 @@ export default function NewStudentDialog() {
     if (ok) setStep((s) => s + 1)
   }
 
+  async function uploadPhoto(studentId: number) {
+    if (!photo) return
+    const fd = new FormData()
+    fd.append('file', photo)
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/students/${studentId}/photo`,
+      {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: subdomain ? { 'X-Tenant-Subdomain': subdomain } : {},
+        body: fd,
+      }
+    )
+    if (!res.ok) {
+      const err = await res.json().catch(() => null)
+      throw new Error(err?.message ?? `Error ${res.status}`)
+    }
+  }
+
   function onSubmit(values: NewStudentInput) {
     startTransition(async () => {
+      let student
       try {
-        const student = await createStudent(values)
-        if (photo) {
-          const fd = new FormData()
-          fd.append('file', photo)
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/students/${student.id}/photo`,
-            {
-              method: 'PATCH',
-              credentials: 'include',
-              headers: subdomain ? { 'X-Tenant-Subdomain': subdomain } : {},
-              body: fd,
-            }
-          )
-          if (!res.ok) {
-            const err = await res.json().catch(() => null)
-            throw new Error(err?.message ?? `Error ${res.status}`)
-          }
-        }
-        toast.success('Alumno creado')
-        handleClose()
+        student = await createStudent(values)
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Error al crear el alumno')
+        return
+      }
+      // The student now exists — any error past this point must not offer "Crear alumno" again.
+      setCreatedStudentId(student.id)
+      try {
+        await uploadPhoto(student.id)
+      } catch (err) {
+        toast.error(
+          `${err instanceof Error ? err.message : 'Error al subir la foto'}. El alumno ya se creó — reintenta subir la foto o continúa sin ella.`
+        )
+        return
+      }
+      toast.success('Alumno creado')
+      handleClose()
+    })
+  }
+
+  function handleRetryPhoto() {
+    if (!createdStudentId) return
+    startTransition(async () => {
+      try {
+        await uploadPhoto(createdStudentId)
+        toast.success('Foto subida')
+        handleClose()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Error al subir la foto')
       }
     })
+  }
+
+  function handleSkipPhoto() {
+    toast.success('Alumno creado')
+    handleClose()
   }
 
   return (
@@ -126,6 +165,22 @@ export default function NewStudentDialog() {
         title="Nuevo alumno"
         className="max-w-md"
       >
+        {createdStudentId ? (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-prose">
+              El alumno ya se creó, pero la foto no se pudo subir. Puedes reintentarlo o continuar sin foto.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={handleSkipPhoto} disabled={isPending}>
+                Continuar sin foto
+              </Button>
+              <Button type="button" size="sm" onClick={handleRetryPhoto} disabled={isPending}>
+                {isPending ? 'Subiendo...' : 'Reintentar foto'}
+              </Button>
+            </div>
+          </div>
+        ) : (
+        <>
         {/* Step indicator */}
         <div className="flex items-center gap-0 mb-6">
           {STEPS.map((s, i) => {
@@ -329,6 +384,8 @@ export default function NewStudentDialog() {
             </div>
           </form>
         </Form>
+        </>
+        )}
       </Dialog>
     </>
   )
