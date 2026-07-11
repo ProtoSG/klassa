@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -58,7 +59,7 @@ public class StudentController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER') or hasRole('TREASURER')")
     public ResponseEntity<ApiResponse<PageResponse<StudentResponse>>> findAll(
-            @PageableDefault(size = 20) Pageable pageable,
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) StudentStatus status,
             @RequestParam(required = false) String search,
             @AuthenticationPrincipal SecurityUser principal) {
