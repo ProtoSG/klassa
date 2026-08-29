@@ -1,2 +1,11 @@
 .atl/
 **/.claude/
+
+# Local code index (per-machine, rebuilt on demand)
+.codegraph/
+
+# Local design-skill context
+.impeccable.md
+
+# Stray npm lockfile — this project uses bun (bun.lock)
+klassa-frontend/package-lock.json
