@@ -57,7 +57,7 @@ export default function LoginForm() {
         }
 
         setSession(result.user, values.subdomain)
-        router.push('/dashboard')
+        router.push(result.user.role === 'PARENT' ? '/portal' : '/dashboard')
       } catch (err) {
         form.setError('root', {
           message: err instanceof Error ? err.message : 'Error al iniciar sesión',

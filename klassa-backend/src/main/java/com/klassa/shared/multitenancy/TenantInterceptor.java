@@ -7,6 +7,7 @@ import com.klassa.tenant.dto.TenantResponse;
 import com.klassa.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +19,9 @@ import java.util.Optional;
 
 @Component
 public class TenantInterceptor implements HandlerInterceptor {
+
+    /** MDC key for the current tenant's subdomain. Mirrored by {@code LogContextFilter}'s clearing. */
+    public static final String MDC_TENANT_ID = "tenantId";
 
     private final TenantService tenantService;
     private final UserService userService;
@@ -37,6 +41,7 @@ public class TenantInterceptor implements HandlerInterceptor {
             // so TenantContext.clear() below would never run — clear it here instead to avoid
             // leaking a stale tenant into the next request on this pooled Tomcat thread.
             TenantContext.clear();
+            MDC.remove(MDC_TENANT_ID);
             throw e;
         }
     }
@@ -60,6 +65,7 @@ public class TenantInterceptor implements HandlerInterceptor {
             }
             rejectIfBlocked(jwtTenant);
             TenantContext.setCurrentTenant(jwtTenant);
+            MDC.put(MDC_TENANT_ID, jwtTenant);
             // Platform-admin users live in a separate table (platform.platform_users), not the
             // tenant `users` table this check queries — only run it for real tenant principals.
             if (!TenantContext.PLATFORM.equals(jwtTenant)) {
@@ -77,6 +83,7 @@ public class TenantInterceptor implements HandlerInterceptor {
             }
             rejectIfBlocked(requested.get());
             TenantContext.setCurrentTenant(requested.get());
+            MDC.put(MDC_TENANT_ID, requested.get());
         }
         return true;
     }
@@ -85,6 +92,7 @@ public class TenantInterceptor implements HandlerInterceptor {
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
                                 Object handler, Exception ex) {
         TenantContext.clear();
+        MDC.remove(MDC_TENANT_ID);
     }
 
     /** Cuts access for a SUSPENDED/CANCELLED tenant on every request, login included. */

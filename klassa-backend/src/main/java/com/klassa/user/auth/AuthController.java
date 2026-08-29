@@ -6,6 +6,7 @@ import com.klassa.shared.multitenancy.TenantContext;
 import com.klassa.shared.security.AuthRateLimiter;
 import com.klassa.shared.security.JwtService;
 import com.klassa.shared.web.ApiResponse;
+import com.klassa.shared.web.ClientIpResolver;
 import com.klassa.user.User;
 import com.klassa.user.UserService;
 import com.klassa.user.dto.ChangePasswordRequest;
@@ -130,13 +131,8 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-    /** Real client IP, honouring a single X-Forwarded-For hop set by the reverse proxy. */
     private String clientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return ClientIpResolver.resolve(request);
     }
 
     private ResponseCookie buildCookie(String value, long maxAgeMillis) {
