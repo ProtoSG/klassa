@@ -1,6 +1,7 @@
 package com.klassa.billing;
 
 import com.klassa.billing.dto.*;
+import com.klassa.plan.RequiresModule;
 import com.klassa.shared.exception.BusinessRuleException;
 import com.klassa.shared.exception.ErrorCode;
 import com.klassa.shared.security.SecurityUser;
@@ -25,6 +26,7 @@ import java.util.List;
 @RequestMapping("/api/billing")
 @Tag(name = "Billing")
 @SecurityRequirement(name = "bearerAuth")
+@RequiresModule("billing")
 public class BillingController {
 
     private final FeeScheduleService feeScheduleService;

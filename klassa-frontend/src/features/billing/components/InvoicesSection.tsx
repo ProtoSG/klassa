@@ -6,6 +6,8 @@ import { History } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import Pagination from '@/shared/components/Pagination'
+import WhatsAppButton from '@/shared/components/WhatsAppButton'
+import { templates } from '@/shared/lib/whatsapp'
 import InvoiceStatusBadge from './InvoiceStatusBadge'
 import RegisterPaymentDialog from './RegisterPaymentDialog'
 import PaymentHistoryDialog from './PaymentHistoryDialog'
@@ -236,6 +238,21 @@ export default function InvoicesSection({ students }: Props) {
                             >
                               Pagar
                             </button>
+                          )}
+                          {(inv.status === 'OVERDUE' || inv.status === 'PENDING') && selectedStudent?.guardianPhone && (
+                            <WhatsAppButton
+                              phone={selectedStudent.guardianPhone}
+                              variant="icon"
+                              label={`Recordar pago de ${inv.concept} por WhatsApp`}
+                              text={templates.paymentReminder({
+                                guardianName: selectedStudent.guardianName ?? '',
+                                studentName: selectedStudent.fullName,
+                                concept: inv.concept,
+                                dueDate: inv.dueDate,
+                                pendingAmount: inv.pendingAmount,
+                                invoiceNumber: inv.invoiceNumber,
+                              })}
+                            />
                           )}
                           {inv.status !== 'CANCELLED' && inv.status !== 'PAID' && (
                             <button
