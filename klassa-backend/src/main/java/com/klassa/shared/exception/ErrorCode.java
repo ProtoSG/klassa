@@ -60,6 +60,7 @@ public enum ErrorCode {
 
     // --- Family / guardian ---
     FAMILY_ALREADY_LINKED("La familia ya tiene un apoderado vinculado"),
+    FAMILY_NOT_LINKED("Tu cuenta no está vinculada a ningún alumno todavía"),
 
     // --- Tenant ---
     SUBDOMAIN_TAKEN("El subdominio '%s' ya está en uso"),
@@ -67,12 +68,19 @@ public enum ErrorCode {
     PLAN_BELOW_CURRENT_USAGE("El colegio tiene %d alumnos activos, más que el límite de %d del nuevo plan"),
     TENANT_NOT_CANCELLED("Solo se pueden purgar los datos de un colegio cancelado"),
     TENANT_ALREADY_PURGED("Los datos de este colegio ya fueron purgados"),
+    MODULE_NOT_INCLUDED_IN_PLAN("El módulo '%s' no está disponible en tu plan actual. Actualiza tu suscripción para acceder."),
+    STUDENT_LIMIT_REACHED("El colegio alcanzó el límite de %d alumnos del plan actual. Actualiza tu suscripción para agregar más."),
 
     // --- User / auth ---
     EMAIL_TAKEN("El correo '%s' ya está registrado"),
     INVALID_CREDENTIALS("Credenciales inválidas"),
     PASSWORD_CHANGE_REQUIRED("Debes cambiar tu contraseña antes de continuar"),
-    ACCESS_DENIED("Acceso denegado");
+    ACCESS_DENIED("Acceso denegado"),
+
+    // --- Assistant ---
+    ASSISTANT_QUOTA_EXCEEDED("Se alcanzó el límite mensual de consultas al asistente para el plan actual"),
+    ASSISTANT_UNAVAILABLE("El asistente no está disponible en este momento, intenta más tarde"),
+    ASSISTANT_TOO_MANY_MESSAGES("La conversación supera el máximo de %d mensajes permitidos");
 
     private final String messageTemplate;
 

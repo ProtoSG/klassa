@@ -1,12 +1,11 @@
 package com.klassa.tenant;
 
 import com.klassa.config.FlywayConfig;
+import com.klassa.plan.PlanService;
 import com.klassa.shared.exception.BusinessRuleException;
 import com.klassa.shared.exception.ErrorCode;
 import com.klassa.shared.exception.EntityNotFoundException;
 import com.klassa.shared.multitenancy.TenantContext;
-import com.klassa.student.StudentRepository;
-import com.klassa.student.StudentStatus;
 import com.klassa.tenant.dto.RegisterTenantRequest;
 import com.klassa.tenant.dto.TenantProvisionResponse;
 import com.klassa.tenant.dto.TenantRequest;
@@ -41,21 +40,25 @@ public class TenantService {
     private final FlywayConfig flywayConfig;
     private final JdbcTemplate jdbcTemplate;
     private final UserService userService;
-    private final StudentRepository studentRepository;
+    private final PlanService planService;
+    private final TenantStudentCounter tenantStudentCounter;
     // Self-reference (proxied) so provisionWithAdmin can call createTenant through the Spring
     // proxy and trigger its @Transactional; a plain this.createTenant(...) would bypass it.
     private final TenantService self;
 
     public TenantService(TenantRepository tenantRepository, PlanRepository planRepository,
                          FlywayConfig flywayConfig, JdbcTemplate jdbcTemplate,
-                         UserService userService, StudentRepository studentRepository,
+                         UserService userService,
+                         PlanService planService,
+                         TenantStudentCounter tenantStudentCounter,
                          @Lazy TenantService self) {
         this.tenantRepository = tenantRepository;
         this.planRepository = planRepository;
         this.flywayConfig = flywayConfig;
         this.jdbcTemplate = jdbcTemplate;
         this.userService = userService;
-        this.studentRepository = studentRepository;
+        this.planService = planService;
+        this.tenantStudentCounter = tenantStudentCounter;
         this.self = self;
     }
 
@@ -160,14 +163,18 @@ public class TenantService {
                 .orElseThrow(() -> new EntityNotFoundException("Plan", planId));
 
         if (plan.getMaxStudents() < UNLIMITED_PLAN_THRESHOLD) {
-            long activeStudents = countActiveStudents(subdomain);
+            long activeStudents = tenantStudentCounter.countActiveStudentsByTenant(subdomain);
             if (activeStudents > plan.getMaxStudents()) {
                 throw new BusinessRuleException(ErrorCode.PLAN_BELOW_CURRENT_USAGE, activeStudents, plan.getMaxStudents());
             }
         }
 
         tenant.setPlan(plan);
-        return toResponse(tenantRepository.save(tenant));
+        TenantResponse response = toResponse(tenantRepository.save(tenant));
+        // Drop the cached plan features so the very next request — including the ones from
+        // BillingController / AssistantController behind @RequiresModule — sees the new caps.
+        planService.evictCache(subdomain);
+        return response;
     }
 
     /**
@@ -193,16 +200,6 @@ public class TenantService {
         TenantResponse response = toResponse(tenantRepository.save(tenant));
         log.warn("Tenant data purged: subdomain={} name={}", subdomain, tenant.getName());
         return response;
-    }
-
-    /** Counts active students in a specific tenant's own schema, from platform-schema context. */
-    private long countActiveStudents(String subdomain) {
-        TenantContext.setCurrentTenant(subdomain);
-        try {
-            return studentRepository.countByStatus(StudentStatus.ACTIVE);
-        } finally {
-            TenantContext.clear();
-        }
     }
 
     private void dropTenantSchema(String schemaName) {
