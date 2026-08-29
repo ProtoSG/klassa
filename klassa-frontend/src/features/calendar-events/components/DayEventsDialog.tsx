@@ -8,6 +8,7 @@ import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import CalendarEventTypeBadge from './CalendarEventTypeBadge'
 import EditCalendarEventDialog from './EditCalendarEventDialog'
 import NewCalendarEventDialog from './NewCalendarEventDialog'
+import AnnounceEventButton from './AnnounceEventButton'
 import { deleteCalendarEvent } from '../actions'
 import type { CalendarEvent } from '../types'
 
@@ -78,6 +79,7 @@ export default function DayEventsDialog({ date, events, canManage, onClose, onCr
                 {event.description && (
                   <p className="text-xs text-prose">{event.description}</p>
                 )}
+                <AnnounceEventButton event={event} />
               </div>
             ))
           )}
