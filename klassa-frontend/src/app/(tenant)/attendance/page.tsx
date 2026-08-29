@@ -2,13 +2,15 @@ import { getAcademicYears } from '@/features/academic-years/api'
 import { getSectionsByYear } from '@/features/sections/api'
 import AttendanceClient from '@/features/attendance/components/AttendanceClient'
 import { getMe } from '@/features/auth/actions'
+import ErrorState from '@/shared/components/ErrorState'
+import { logFetchError } from '@/shared/lib/log-error'
 
 export default async function AttendancePage() {
   const session = await getMe()
   const isTeacher = session?.user.role === 'TEACHER'
 
-  const years = await getAcademicYears().catch(() => [])
-  const activeYear = years.find((y) => y.active)
+  const years = await getAcademicYears().catch((err) => { logFetchError('attendance-years', err); return null })
+  const activeYear = years?.find((y) => y.active)
   const sections = activeYear
     ? await getSectionsByYear(activeYear.id, { mine: isTeacher }).catch(() => [])
     : []
@@ -24,7 +26,9 @@ export default async function AttendancePage() {
         </p>
       </div>
 
-      {!activeYear ? (
+      {years === null ? (
+        <ErrorState message="Error al cargar la asistencia." />
+      ) : !activeYear ? (
         <div className="rounded-2xl border border-line bg-white p-10 text-center shadow-card">
           <p className="text-sm text-ghost">No hay un año académico activo.</p>
         </div>

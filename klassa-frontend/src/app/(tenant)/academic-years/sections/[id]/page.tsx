@@ -12,6 +12,8 @@ import SectionEnrollments from '@/features/enrollments/components/SectionEnrollm
 import EnrollStudentDialog from '@/features/enrollments/components/EnrollStudentDialog'
 import SectionScores from '@/features/scores/components/SectionScores'
 import SectionCourses from '@/features/teaching-assignments/components/SectionCourses'
+import ErrorState from '@/shared/components/ErrorState'
+import { logFetchError } from '@/shared/lib/log-error'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -23,21 +25,21 @@ export default async function SectionDetailPage({ params }: Props) {
 
   if (isNaN(sectionId)) notFound()
 
-  const section = await getSectionById(sectionId).catch(() => null)
+  const section = await getSectionById(sectionId).catch((err) => { logFetchError('section-detail', err); return null })
   if (!section) notFound()
 
   const session = await getMe()
   const canManage = session?.user.role !== 'TEACHER'
 
   const [enrollments, gradeSubjects, studentsPage, teachers, teachingAssignments] = await Promise.all([
-    getEnrollmentsBySection(sectionId).catch(() => []),
+    getEnrollmentsBySection(sectionId).catch((err) => { logFetchError('section-enrollments', err); return null }),
     getSubjects(section.gradeLevelId).catch(() => []),
     getStudentPage({ size: 300, status: 'ACTIVE' }).catch(() => ({ content: [] })),
     getUsers('TEACHER').catch(() => []),
     getTeachingAssignmentsBySection(sectionId).catch(() => []),
   ])
 
-  const activeEnrollments = enrollments.filter((e) => e.status === 'ACTIVE')
+  const activeEnrollments = enrollments?.filter((e) => e.status === 'ACTIVE') ?? []
   const activeStudentIds = new Set(activeEnrollments.map((e) => e.studentId))
   const availableStudents = studentsPage.content.filter((s) => !activeStudentIds.has(s.id))
   const assignedSubjectIds = new Set(teachingAssignments.map((a) => a.subjectId))
@@ -88,9 +90,13 @@ export default async function SectionDetailPage({ params }: Props) {
       {/* Enrollments */}
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium text-prose">Matriculados ({activeEnrollments.length})</h2>
-        {canManage && <EnrollStudentDialog sectionId={sectionId} students={availableStudents} />}
+        {canManage && enrollments && <EnrollStudentDialog sectionId={sectionId} students={availableStudents} />}
       </div>
-      <SectionEnrollments initialEnrollments={enrollments} canManage={canManage} />
+      {enrollments ? (
+        <SectionEnrollments initialEnrollments={enrollments} canManage={canManage} />
+      ) : (
+        <ErrorState message="Error al cargar los matriculados." />
+      )}
 
       {/* Scores — selector per student */}
       {activeEnrollments.length > 0 && (

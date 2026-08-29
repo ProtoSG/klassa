@@ -2,30 +2,11 @@
 
 import { cookies } from 'next/headers'
 import { BACKEND_URL, COOKIE_NAME, COOKIE_SUBDOMAIN } from '@/shared/lib/constants'
+import { createTenantAction } from '@/shared/lib/tenant-fetch'
 import type { FeeScheduleResponse, InvoiceResponse, InvoiceStatus, PaymentMethod, PaymentResponse } from './types'
 import type { PageResponse } from '@/shared/types/api'
 
-async function tenantFetch<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
-  const jar = await cookies()
-  const token = jar.get(COOKIE_NAME)?.value
-  const subdomain = jar.get(COOKIE_SUBDOMAIN)?.value
-  const res = await fetch(`${BACKEND_URL}/api${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Cookie: `${COOKIE_NAME}=${token}` } : {}),
-      ...(subdomain ? { 'X-Tenant-Subdomain': subdomain } : {}),
-    },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-    cache: 'no-store',
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => null)
-    throw new Error(err?.message ?? `Error ${res.status}`)
-  }
-  const data = await res.json()
-  return data.data as T
-}
+const tenantFetch = createTenantAction({ cache: 'no-store', defaultMethod: 'GET' })
 
 export async function createFeeSchedule(input: {
   concept: string
