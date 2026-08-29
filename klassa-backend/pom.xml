@@ -162,6 +162,15 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Structured JSON logs to stdout — picked up by container log collectors
+             (Docker, Datadog, Loki, etc.) and indexed by tenantId/userId/requestId
+             fields populated by RequestContextFilter. -->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>8.0</version>
+        </dependency>
     </dependencies>
 
     <build>

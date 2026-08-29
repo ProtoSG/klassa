@@ -80,6 +80,17 @@ platform:
     first-name: ${PLATFORM_ADMIN_FIRST_NAME:Platform}
     last-name: ${PLATFORM_ADMIN_LAST_NAME:Admin}
 
+llm:
+  provider: ${LLM_PROVIDER:anthropic}
+
+anthropic:
+  api-key: ${ANTHROPIC_API_KEY:}
+  model: ${ANTHROPIC_MODEL:claude-sonnet-5}
+
+openrouter:
+  api-key: ${OPENROUTER_API_KEY:}
+  model: ${OPENROUTER_MODEL:openai/gpt-4o}
+
 springdoc:
   api-docs:
     enabled: false
@@ -106,6 +117,13 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+logging:
+  level:
+    com.klassa: DEBUG
+    # Show SQL binding variable values in dev — useful for debugging query bugs,
+    # noisy in prod so we leave it at WARN there.
+    org.hibernate.orm.jdbc.bind: TRACE
 
 springdoc:
   api-docs:
@@ -139,3 +157,11 @@ jwt:
 
 cors:
   allowed-origins: "https://app.klassa.com"
+
+logging:
+  level:
+    # Prod: app stays at INFO; only WARN+ for third-party noise. The logback-spring.xml
+    # profile block picks up this profile and swaps the human-readable pattern for the
+    # logstash JSON encoder so stdout is one event per line.
+    com.klassa: INFO
+    root: WARN
