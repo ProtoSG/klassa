@@ -7,5 +7,7 @@ public record FamilyResponse(
         String guardianPhone,
         String address,
         String emergencyContact,
-        String emergencyPhone
+        String emergencyPhone,
+        /** Email of the User account linked as this family's PARENT login, or null if none yet. */
+        String linkedUserEmail
 ) {}

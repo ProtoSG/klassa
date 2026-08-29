@@ -4,8 +4,7 @@ import { useRef, useTransition, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Camera } from 'lucide-react'
 import { toast } from 'sonner'
-import { useSession } from '@/shared/store/session'
-import { COOKIE_NAME } from '@/shared/lib/constants'
+import { uploadStudentPhoto } from '../actions'
 
 interface Props {
   studentId: number
@@ -21,7 +20,6 @@ export default function StudentPhotoButton({ studentId, fullName, firstName, las
   const [isPending, startTransition] = useTransition()
   const [preview, setPreview] = useState<string | null>(null)
   const router = useRouter()
-  const subdomain = useSession((s) => s.subdomain)
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -41,20 +39,7 @@ export default function StudentPhotoButton({ studentId, fullName, firstName, las
         const fd = new FormData()
         fd.append('file', file)
 
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/students/${studentId}/photo`,
-          {
-            method: 'PATCH',
-            credentials: 'include',
-            headers: subdomain ? { 'X-Tenant-Subdomain': subdomain } : {},
-            body: fd,
-          }
-        )
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => null)
-          throw new Error(err?.message ?? `Error ${res.status}`)
-        }
+        await uploadStudentPhoto(studentId, fd)
 
         toast.success('Foto actualizada')
         router.refresh()

@@ -6,6 +6,8 @@ import NewStudentDialog from '@/features/students/components/NewStudentDialog'
 import ImportStudentsDialog from '@/features/students/components/ImportStudentsDialog'
 import Pagination from '@/shared/components/Pagination'
 import { getMe } from '@/features/auth/actions'
+import ErrorState from '@/shared/components/ErrorState'
+import { logFetchError } from '@/shared/lib/log-error'
 
 const PAGE_SIZE = 20
 
@@ -34,7 +36,7 @@ export default async function StudentsPage({
     size: PAGE_SIZE,
     status: status || undefined,
     search: search || undefined,
-  }).catch(() => null)
+  }).catch((err) => { logFetchError('students', err); return null })
 
   return (
     <div className="flex flex-col gap-5 px-4 md:px-8 max-w-7xl mx-auto">
@@ -71,10 +73,7 @@ export default async function StudentsPage({
           </Suspense>
         </>
       ) : (
-        <div className="rounded-2xl border border-line bg-white p-16 text-center shadow-card">
-          <p className="text-prose text-sm">Error al cargar los alumnos.</p>
-          <p className="text-ghost text-xs mt-1">Verifica tu conexión o intenta de nuevo.</p>
-        </div>
+        <ErrorState message="Error al cargar los alumnos." />
       )}
     </div>
   )

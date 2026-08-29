@@ -1,5 +1,7 @@
 package com.klassa.student;
 
+import com.klassa.plan.PlanFeatures;
+import com.klassa.plan.PlanService;
 import com.klassa.shared.exception.BusinessRuleException;
 import com.klassa.shared.exception.ErrorCode;
 import com.klassa.shared.exception.EntityNotFoundException;
@@ -51,17 +53,20 @@ public class StudentService {
     private final StorageService storageService;
     private final StudentCodeGenerator studentCodeGenerator;
     private final StudentImportService studentImportService;
+    private final PlanService planService;
     private final StudentImportRowParser importRowParser = new StudentImportRowParser();
 
     public StudentService(StudentRepository studentRepository, FamilyRepository familyRepository,
                           StudentMapper studentMapper, StorageService storageService,
-                          StudentCodeGenerator studentCodeGenerator, StudentImportService studentImportService) {
+                          StudentCodeGenerator studentCodeGenerator, StudentImportService studentImportService,
+                          PlanService planService) {
         this.studentRepository = studentRepository;
         this.familyRepository = familyRepository;
         this.studentMapper = studentMapper;
         this.storageService = storageService;
         this.studentCodeGenerator = studentCodeGenerator;
         this.studentImportService = studentImportService;
+        this.planService = planService;
     }
 
     // Redis cache is shared across tenants, but entity ids are only unique per tenant schema.
@@ -72,6 +77,7 @@ public class StudentService {
     @Transactional
     @CacheEvict(value = "students", allEntries = true)
     public StudentResponse create(StudentRequest request) {
+        enforceStudentLimit();
         String code = request.code();
         if (code == null || code.isBlank()) {
             code = studentCodeGenerator.nextCode();
@@ -81,6 +87,26 @@ public class StudentService {
         Student student = buildStudent(new Student(), request);
         student.setCode(code);
         return toResponse(studentRepository.save(student));
+    }
+
+    /**
+     * Enforces the {@code plans.max_students} cap (or {@code features.maxStudents} if set) for
+     * the current tenant. Called by {@link #create} and {@link #importStudents} before any
+     * row is persisted. Throws {@link ErrorCode#STUDENT_LIMIT_REACHED} when the tenant is at
+     * or over the cap.
+     *
+     * <p>Not transactionally locked against concurrent creates — two simultaneous requests
+     * could each pass the check and both insert, briefly overshooting the cap by one. The
+     * {@code plans.features} JSONB is a soft commercial limit, not a hard integrity
+     * constraint; if it ever needs to be airtight, pair with a row-level lock on the tenant
+     * or a SELECT … FOR UPDATE on the count.
+     */
+    private void enforceStudentLimit() {
+        PlanFeatures features = planService.getCurrentFeatures();
+        long active = studentRepository.countByStatus(StudentStatus.ACTIVE);
+        if (!features.canAddMoreStudents((int) active)) {
+            throw new BusinessRuleException(ErrorCode.STUDENT_LIMIT_REACHED, features.maxStudents());
+        }
     }
 
     // No @Transactional here on purpose: each row is persisted through studentImportService's own
@@ -104,6 +130,16 @@ public class StudentService {
     @CacheEvict(value = "students", allEntries = true)
     public ImportResult importStudents(MultipartFile file) {
         validateImportFile(file);
+
+        // Reject the whole import upfront if the tenant is already at its plan cap. Phase 2
+        // below persists row-by-row in its own transaction, so checking mid-import would mean
+        // partial commits followed by an error — and the user would rather know the import is
+        // impossible before any DB writes than after 50 already committed.
+        PlanFeatures features = planService.getCurrentFeatures();
+        long active = studentRepository.countByStatus(StudentStatus.ACTIVE);
+        if (!features.isUnlimitedStudents() && active >= features.maxStudents()) {
+            throw new BusinessRuleException(ErrorCode.STUDENT_LIMIT_REACHED, features.maxStudents());
+        }
 
         StudentImportSheetReader reader = new StudentImportSheetReader(EXPECTED_IMPORT_HEADERS, MAX_IMPORT_ROWS);
 
@@ -236,6 +272,19 @@ public class StudentService {
                 .orElseThrow(() -> new EntityNotFoundException("Family", id));
     }
 
+    public FamilyResponse findMyFamily(Long guardianUserId) {
+        return studentMapper.toFamilyResponse(resolveMyFamily(guardianUserId));
+    }
+
+    public List<StudentResponse> findMyChildren(Long guardianUserId) {
+        return findByFamily(resolveMyFamily(guardianUserId).getId());
+    }
+
+    private Family resolveMyFamily(Long guardianUserId) {
+        return familyRepository.findByGuardianUserId(guardianUserId)
+                .orElseThrow(() -> new BusinessRuleException(ErrorCode.FAMILY_NOT_LINKED));
+    }
+
     @Transactional
     public FamilyResponse updateFamily(Long id, FamilyRequest request) {
         Family family = familyRepository.findById(id)
@@ -256,7 +305,8 @@ public class StudentService {
         String thumbKey = S3StorageService.isLegacyKey(key) ? key : key + "_thumb.jpg";
         String thumbUrl = storageService.presign(thumbKey, PHOTO_PRESIGN_TTL);
         return new StudentResponse(r.id(), r.code(), r.firstName(), r.lastName(), r.fullName(),
-                r.birthDate(), r.gender(), r.status(), r.familyId(), r.guardianName(), thumbUrl);
+                r.birthDate(), r.gender(), r.status(), r.familyId(),
+                r.guardianName(), r.guardianPhone(), thumbUrl);
     }
 
     private void validateImageFile(MultipartFile file) {
@@ -299,7 +349,13 @@ public class StudentService {
         student.setLastName(request.lastName());
         student.setBirthDate(request.birthDate());
         student.setGender(request.gender());
-        student.setPhotoUrl(request.photoUrl());
+        // photoUrl is deliberately NOT set from the request here. StudentResponse.photoUrl is
+        // always a presigned URL (see toResponse), never the raw storage key — a client that
+        // round-trips a fetched StudentResponse back into an update request (EditStudentDialog,
+        // LinkExistingFamilyDialog) would otherwise persist that presigned URL as if it were the
+        // key, and the next read presigns *that*, producing a nested double-presigned URL that
+        // 400s. uploadPhoto() is the only path allowed to set photoUrl — it always writes the raw
+        // key returned by storageService.upload(), never something read back from a response DTO.
         if (request.familyId() != null) {
             Family family = familyRepository.findById(request.familyId())
                     .orElseThrow(() -> new EntityNotFoundException("Family", request.familyId()));

@@ -33,6 +33,10 @@ public interface AcademicMapper {
     @Mapping(target = "studentCode", source = "student.code")
     @Mapping(target = "sectionId", source = "section.id")
     @Mapping(target = "sectionName", source = "section.name")
+    @Mapping(target = "guardianName",
+             expression = "java(enrollment.getStudent().getFamily() != null ? enrollment.getStudent().getFamily().getGuardianName() : null)")
+    @Mapping(target = "guardianPhone",
+             expression = "java(enrollment.getStudent().getFamily() != null ? enrollment.getStudent().getFamily().getGuardianPhone() : null)")
     EnrollmentResponse toEnrollmentResponse(Enrollment enrollment);
 
     @Mapping(target = "subjectId", source = "subject.id")

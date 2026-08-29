@@ -10,6 +10,8 @@ import {
   fetchAttendanceBySectionDate,
   registerAttendanceBatch,
 } from '../actions'
+import WhatsAppButton from '@/shared/components/WhatsAppButton'
+import { templates } from '@/shared/lib/whatsapp'
 
 interface Props {
   sections: SectionResponse[]
@@ -199,6 +201,54 @@ export default function AttendanceClient({ sections, defaultDate }: Props) {
               {isPending ? 'Registrando...' : 'Registrar asistencia'}
             </button>
           </div>
+
+          {/* Bulk WhatsApp reminder for absentees — opens one tab per absent guardian.
+              Manual Send per WhatsApp Web deep link (no Meta API needed). */}
+          {savedAt === date && (() => {
+            const absentees = enrollments.filter(
+              (e) => (attendanceMap[e.id] ?? 'PRESENT') === 'ABSENT',
+            )
+            if (absentees.length === 0) return null
+            return (
+              <div className="rounded-2xl border border-warning/30 bg-warning/5 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-ink">
+                    {absentees.length} ausente{absentees.length !== 1 ? 's' : ''} hoy
+                  </p>
+                  <p className="text-xs text-ghost">
+                    Abrí WhatsApp y presioná Enviar en cada chat
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {absentees.map((e) => (
+                    <div
+                      key={e.id}
+                      className="flex items-center justify-between gap-2 rounded-xl bg-white border border-line px-3 py-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-ink truncate">{e.studentName}</p>
+                        <p className="text-xs text-ghost">{e.studentCode}</p>
+                      </div>
+                      {e.guardianPhone ? (
+                        <WhatsAppButton
+                          phone={e.guardianPhone}
+                          variant="full"
+                          label="Notificar"
+                          text={templates.attendanceAlert({
+                            guardianName: e.guardianName ?? '',
+                            studentName: e.studentName,
+                            date: date,
+                          })}
+                        />
+                      ) : (
+                        <span className="text-xs text-ghost">Sin teléfono</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
         </>
       )}
     </div>

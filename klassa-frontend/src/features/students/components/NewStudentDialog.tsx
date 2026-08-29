@@ -7,8 +7,7 @@ import { Check, Camera, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { newStudentSchema, type NewStudentInput } from '../schemas'
-import { createStudent } from '../actions'
-import { useSession } from '@/shared/store/session'
+import { createStudent, uploadStudentPhoto } from '../actions'
 import { Dialog } from '@/shared/components/Dialog'
 import {
   Form,
@@ -20,6 +19,8 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import SiblingSearchPicker from './SiblingSearchPicker'
+import type { StudentResponse } from '../types'
 
 const STEPS = [
   { label: 'Alumno',     fields: ['firstName', 'lastName', 'birthDate', 'gender'] },
@@ -27,7 +28,11 @@ const STEPS = [
   { label: 'Emergencia', fields: [] },
 ] as const
 
-type StepFields = typeof STEPS[number]['fields'][number]
+// Step 1's required fields depend on guardianMode — see newStudentSchema's superRefine.
+const GUARDIAN_STEP_FIELDS = {
+  new: ['guardianName', 'guardianEmail', 'guardianPhone', 'address'] as const,
+  existing: ['existingFamilyId'] as const,
+}
 
 export default function NewStudentDialog() {
   const [open, setOpen]         = useState(false)
@@ -36,13 +41,13 @@ export default function NewStudentDialog() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const fileInputRef            = useRef<HTMLInputElement>(null)
   const [isPending, startTransition] = useTransition()
-  const subdomain = useSession((s) => s.subdomain)
 
   // Set once `createStudent` succeeds. From that point on the student already exists — if the
   // photo upload then fails, we must NOT let the user resubmit the form (that would create a
   // second Family+Student for the same person). Instead we lock the form and only offer to
   // retry the photo or finish without one.
   const [createdStudentId, setCreatedStudentId] = useState<number | null>(null)
+  const [selectedSibling, setSelectedSibling] = useState<StudentResponse | null>(null)
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -64,18 +69,22 @@ export default function NewStudentDialog() {
     defaultValues: {
       firstName: '', lastName: '',
       birthDate: '', gender: 'M',
+      guardianMode: 'new',
       guardianName: '', guardianEmail: '',
       guardianPhone: '', address: '',
+      existingFamilyId: null,
       emergencyContact: '', emergencyPhone: '',
     },
     mode: 'onTouched',
   })
+  const guardianMode = form.watch('guardianMode')
 
   function handleClose() {
     if (isPending) return
     setOpen(false)
     setStep(0)
     setCreatedStudentId(null)
+    setSelectedSibling(null)
     form.reset()
     if (photoPreview) URL.revokeObjectURL(photoPreview)
     setPhoto(null)
@@ -84,8 +93,10 @@ export default function NewStudentDialog() {
   }
 
   async function handleNext() {
-    const fields = STEPS[step].fields as unknown as StepFields[]
-    const ok = fields.length === 0 || await form.trigger(fields)
+    const fields = step === 1
+      ? GUARDIAN_STEP_FIELDS[form.getValues('guardianMode')]
+      : STEPS[step].fields
+    const ok = fields.length === 0 || await form.trigger([...fields] as (keyof NewStudentInput)[])
     if (ok) setStep((s) => s + 1)
   }
 
@@ -105,19 +116,7 @@ export default function NewStudentDialog() {
     if (!photo) return
     const fd = new FormData()
     fd.append('file', photo)
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/students/${studentId}/photo`,
-      {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: subdomain ? { 'X-Tenant-Subdomain': subdomain } : {},
-        body: fd,
-      }
-    )
-    if (!res.ok) {
-      const err = await res.json().catch(() => null)
-      throw new Error(err?.message ?? `Error ${res.status}`)
-    }
+    await uploadStudentPhoto(studentId, fd)
   }
 
   function onSubmit(values: NewStudentInput) {
@@ -317,39 +316,82 @@ export default function NewStudentDialog() {
             {/* Step 1 — Acudiente */}
             {step === 1 && (
               <div className="flex flex-col gap-3">
-                <FormField control={form.control} name="guardianName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre completo</FormLabel>
-                    <FormControl><Input placeholder="Carlos Pérez" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField control={form.control} name="guardianEmail" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl><Input type="email" placeholder="carlos@mail.com" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="guardianPhone" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Teléfono</FormLabel>
-                      <FormControl><Input placeholder="999123456" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                {/* Every student needs a guardian — this just picks whether it's a new one
+                    or an existing one already in the system (e.g. a sibling's guardian). */}
+                <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-muted-fill">
+                  {(['new', 'existing'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => {
+                        form.setValue('guardianMode', mode)
+                        if (mode === 'new') {
+                          setSelectedSibling(null)
+                          form.setValue('existingFamilyId', null)
+                        }
+                      }}
+                      className={`py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        guardianMode === mode
+                          ? 'bg-white text-ink shadow-card'
+                          : 'text-ghost hover:text-ink'
+                      }`}
+                    >
+                      {mode === 'new' ? 'Nuevo apoderado' : 'Apoderado existente'}
+                    </button>
+                  ))}
                 </div>
-                <FormField control={form.control} name="address" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Dirección{' '}
-                      <span className="text-ghost font-normal">(opcional)</span>
-                    </FormLabel>
-                    <FormControl><Input placeholder="Av. Los Álamos 123" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+
+                {guardianMode === 'new' ? (
+                  <>
+                    <FormField control={form.control} name="guardianName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nombre completo</FormLabel>
+                        <FormControl><Input placeholder="Carlos Pérez" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField control={form.control} name="guardianEmail" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl><Input type="email" placeholder="carlos@mail.com" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="guardianPhone" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Teléfono</FormLabel>
+                          <FormControl><Input placeholder="999123456" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+                    <FormField control={form.control} name="address" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Dirección{' '}
+                          <span className="text-ghost font-normal">(opcional)</span>
+                        </FormLabel>
+                        <FormControl><Input placeholder="Av. Los Álamos 123" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-ghost -mt-1">
+                      Busca a un hermano o hermana ya registrado — este alumno compartirá su misma familia y apoderado.
+                    </p>
+                    <SiblingSearchPicker
+                      selected={selectedSibling}
+                      onSelect={(s) => {
+                        setSelectedSibling(s)
+                        form.setValue('existingFamilyId', s.familyId, { shouldValidate: true })
+                      }}
+                    />
+                    <FormField control={form.control} name="existingFamilyId" render={() => <FormMessage />} />
+                  </>
+                )}
               </div>
             )}
 

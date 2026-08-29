@@ -12,5 +12,10 @@ public record EnrollmentResponse(
         Long sectionId,
         String sectionName,
         LocalDateTime enrolledAt,
-        EnrollmentStatus status
+        EnrollmentStatus status,
+        // Populated by AcademicMapper when the enrollment's student has a family. Used by
+        // the attendance screen's "notify absentees via WhatsApp" panel — without these
+        // we'd need an N+1 fetch per row, so we hydrate them eagerly via the mapper.
+        String guardianName,
+        String guardianPhone
 ) {}

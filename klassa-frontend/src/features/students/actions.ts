@@ -3,49 +3,32 @@
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { BACKEND_URL, COOKIE_NAME, COOKIE_SUBDOMAIN } from '@/shared/lib/constants'
+import { createTenantAction } from '@/shared/lib/tenant-fetch'
 import type { NewStudentInput, UpdateStudentInput as UpdateStudentSchemaInput, UpdateFamilyInput as UpdateFamilySchemaInput } from './schemas'
-import type { StudentResponse, FamilyResponse, StudentStatus, ImportResult } from './types'
+import type { StudentResponse, FamilyResponse, StudentStatus, ImportResult, PageResponse } from './types'
 
-async function tenantFetch<T>(path: string, method: string, body?: unknown): Promise<T> {
-  const jar = await cookies()
-  const token = jar.get(COOKIE_NAME)?.value
-  const subdomain = jar.get(COOKIE_SUBDOMAIN)?.value
-
-  const res = await fetch(`${BACKEND_URL}/api${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Cookie: `${COOKIE_NAME}=${token}` } : {}),
-      ...(subdomain ? { 'X-Tenant-Subdomain': subdomain } : {}),
-    },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  })
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => null)
-    throw new Error(err?.message ?? `Error ${res.status}`)
-  }
-
-  const data = await res.json()
-  return data.data as T
-}
+const tenantFetch = createTenantAction()
 
 export async function createStudent(input: NewStudentInput): Promise<StudentResponse> {
-  const family = await tenantFetch<{ id: number }>('/families', 'POST', {
-    guardianName: input.guardianName,
-    guardianEmail: input.guardianEmail,
-    guardianPhone: input.guardianPhone,
-    address: input.address ?? '',
-    emergencyContact: input.emergencyContact ?? '',
-    emergencyPhone: input.emergencyPhone ?? '',
-  })
+  // 'existing': reuse a sibling's Family (picked in the dialog, schema guarantees
+  // existingFamilyId is set) instead of creating a duplicate one for the same guardian.
+  const familyId = input.guardianMode === 'existing' && input.existingFamilyId
+    ? input.existingFamilyId
+    : (await tenantFetch<{ id: number }>('/families', 'POST', {
+        guardianName: input.guardianName,
+        guardianEmail: input.guardianEmail,
+        guardianPhone: input.guardianPhone,
+        address: input.address ?? '',
+        emergencyContact: input.emergencyContact ?? '',
+        emergencyPhone: input.emergencyPhone ?? '',
+      })).id
 
   const student = await tenantFetch<StudentResponse>('/students', 'POST', {
     firstName: input.firstName,
     lastName: input.lastName,
     birthDate: input.birthDate,
     gender: input.gender,
-    familyId: family.id,
+    familyId,
     photoUrl: null,
   })
 
@@ -90,6 +73,22 @@ export async function addFamily(student: StudentResponse, input: UpdateFamilySch
   revalidatePath('/students')
   revalidatePath(`/students/${student.id}`)
   return updated
+}
+
+/**
+ * For "link this student to an existing family" — search students that
+ * already HAVE a family (so their familyId can be copied onto another
+ * student), excluding the student being linked itself. `api.ts`'s
+ * `getStudentPage` can't be called from a client component (it depends on
+ * `next/headers` via the shared fetch helper); this is the Server Action
+ * equivalent for that one client-triggered use case.
+ */
+export async function searchLinkableStudents(query: string, excludeStudentId?: number): Promise<StudentResponse[]> {
+  if (query.trim().length === 0) return []
+  const page = await tenantFetch<PageResponse<StudentResponse>>(
+    `/students?search=${encodeURIComponent(query)}&size=10`,
+  )
+  return page.content.filter((s) => s.familyId != null && s.id !== excludeStudentId)
 }
 
 export async function updateFamily(id: number, input: UpdateFamilySchemaInput): Promise<FamilyResponse> {

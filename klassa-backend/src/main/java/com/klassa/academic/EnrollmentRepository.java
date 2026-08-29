@@ -1,5 +1,6 @@
 package com.klassa.academic;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -8,6 +9,9 @@ import java.util.Optional;
 
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
+    // Fetches student → family in one go so the AcademicMapper can hydrate guardianName /
+    // guardianPhone onto the response without triggering lazy loads during the render.
+    @EntityGraph(attributePaths = {"student", "student.family"})
     List<Enrollment> findAllBySectionId(Long sectionId);
 
     List<Enrollment> findAllByStudentId(Long studentId);
