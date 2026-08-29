@@ -57,4 +57,9 @@ public class TenantController {
             @RequestParam Long planId) {
         return ResponseEntity.ok(ApiResponse.ok(tenantService.updatePlan(subdomain, planId)));
     }
+
+    @DeleteMapping("/{subdomain}/data")
+    public ResponseEntity<ApiResponse<TenantResponse>> purgeData(@PathVariable String subdomain) {
+        return ResponseEntity.ok(ApiResponse.ok(tenantService.purgeData(subdomain)));
+    }
 }

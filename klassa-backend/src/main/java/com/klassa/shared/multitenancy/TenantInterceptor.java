@@ -1,8 +1,13 @@
 package com.klassa.shared.multitenancy;
 
+import com.klassa.shared.exception.EntityNotFoundException;
 import com.klassa.shared.security.SecurityUser;
+import com.klassa.tenant.TenantService;
+import com.klassa.tenant.dto.TenantResponse;
+import com.klassa.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,9 +20,35 @@ import java.util.Optional;
 @Component
 public class TenantInterceptor implements HandlerInterceptor {
 
+    /** MDC key for the current tenant's subdomain. Mirrored by {@code LogContextFilter}'s clearing. */
+    public static final String MDC_TENANT_ID = "tenantId";
+
+    private final TenantService tenantService;
+    private final UserService userService;
+
+    public TenantInterceptor(TenantService tenantService, UserService userService) {
+        this.tenantService = tenantService;
+        this.userService = userService;
+    }
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        String jwtTenant = authenticatedTenant();
+        try {
+            return doPreHandle(request);
+        } catch (RuntimeException e) {
+            // preHandle throwing skips this interceptor's own afterCompletion (Spring only
+            // triggers afterCompletion for interceptors that already returned successfully),
+            // so TenantContext.clear() below would never run — clear it here instead to avoid
+            // leaking a stale tenant into the next request on this pooled Tomcat thread.
+            TenantContext.clear();
+            MDC.remove(MDC_TENANT_ID);
+            throw e;
+        }
+    }
+
+    private boolean doPreHandle(HttpServletRequest request) {
+        SecurityUser user = authenticatedUser();
+        String jwtTenant = user != null ? user.tenantId() : null;
 
         if (jwtTenant != null) {
             // Authenticated request: tenant is bound by the JWT (already set by JwtAuthFilter).
@@ -32,7 +63,14 @@ public class TenantInterceptor implements HandlerInterceptor {
                     throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tenant mismatch");
                 }
             }
+            rejectIfBlocked(jwtTenant);
             TenantContext.setCurrentTenant(jwtTenant);
+            MDC.put(MDC_TENANT_ID, jwtTenant);
+            // Platform-admin users live in a separate table (platform.platform_users), not the
+            // tenant `users` table this check queries — only run it for real tenant principals.
+            if (!TenantContext.PLATFORM.equals(jwtTenant)) {
+                rejectIfDeactivated(user.userId());
+            }
             return true;
         }
 
@@ -43,7 +81,9 @@ public class TenantInterceptor implements HandlerInterceptor {
             if (!TenantSubdomain.isValid(requested.get())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid tenant subdomain");
             }
+            rejectIfBlocked(requested.get());
             TenantContext.setCurrentTenant(requested.get());
+            MDC.put(MDC_TENANT_ID, requested.get());
         }
         return true;
     }
@@ -52,13 +92,42 @@ public class TenantInterceptor implements HandlerInterceptor {
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
                                 Object handler, Exception ex) {
         TenantContext.clear();
+        MDC.remove(MDC_TENANT_ID);
     }
 
-    /** Tenant from the authenticated principal, or null if the request is not authenticated. */
-    private String authenticatedTenant() {
+    /** Cuts access for a SUSPENDED/CANCELLED tenant on every request, login included. */
+    private void rejectIfBlocked(String subdomain) {
+        if (TenantContext.PLATFORM.equals(subdomain)) return;
+
+        TenantResponse tenant;
+        try {
+            tenant = tenantService.findBySubdomain(subdomain);
+        } catch (EntityNotFoundException e) {
+            return; // unknown subdomain: leave existing downstream behavior untouched
+        }
+
+        switch (tenant.status()) {
+            case SUSPENDED -> throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "La cuenta de este colegio está suspendida. Contacta al administrador de la plataforma.");
+            case CANCELLED -> throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "La cuenta de este colegio ha sido cancelada.");
+            default -> { }
+        }
+    }
+
+    /** Cuts access the moment a user is deactivated, instead of waiting for their JWT to expire. */
+    private void rejectIfDeactivated(Long userId) {
+        if (!userService.isActive(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Tu cuenta fue desactivada. Contacta al administrador del colegio.");
+        }
+    }
+
+    /** Authenticated principal, or null if the request is not authenticated. */
+    private SecurityUser authenticatedUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof SecurityUser user) {
-            return user.tenantId();
+            return user;
         }
         return null;
     }

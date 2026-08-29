@@ -2,8 +2,8 @@
 
 | Campo | Valor |
 |---|---|
-| Versión doc | 1.0 — 2026-06-25 |
-| Estado | MVP funcional; endurecimiento y features de plan en curso |
+| Versión doc | 1.1 — 2026-08-16 |
+| Estado | MVP funcional; carga docente, calendario, notificaciones, asistente IA y portal parent entregados; endurecimiento en curso |
 
 ---
 
@@ -15,16 +15,18 @@ apilan los módulos de dominio en orden de dependencia
 (académico → alumnos → matrícula → asistencia/notas → cobranza).
 
 ```
-Fase 0 ─ Infra & multitenancy   ← base (hecho)
-Fase 1 ─ Plataforma & auth      ← hecho
-Fase 2 ─ Académico              ← hecho
-Fase 3 ─ Alumnos & matrícula    ← hecho
-Fase 4 ─ Asistencia & notas     ← hecho
-Fase 5 ─ Cobranza               ← hecho
-Fase 6 ─ Landing & UI system    ← hecho
-Fase 7 ─ Endurecimiento prod    ← en curso
-Fase 8 ─ Portal apoderados      ← pendiente
-Fase 9 ─ Pagos & reportes       ← pendiente
+Fase 0 ─ Infra & multitenancy             ← base (hecho)
+Fase 1 ─ Plataforma & auth                ← hecho
+Fase 2 ─ Académico                        ← hecho
+Fase 3 ─ Alumnos & matrícula              ← hecho
+Fase 4 ─ Asistencia & notas               ← hecho
+Fase 5 ─ Cobranza                         ← hecho
+Fase 6 ─ Landing & UI system              ← hecho
+Fase 6b ─ Carga docente, calendario,      ← hecho
+        notificaciones, asistente IA
+Fase 7 ─ Endurecimiento prod              ← en curso
+Fase 8 ─ Portal apoderados (PARENT)       ← hecho
+Fase 9 ─ Pagos en línea & reportes        ← pendiente
 ```
 
 ---
@@ -72,26 +74,35 @@ Fase 9 ─ Pagos & reportes       ← pendiente
 - Navegación por rol (`BottomNav`, `nav-items.ts`).
 - **Aceptación:** UI responsive, accesible, idioma español.
 
+### Fase 6b — Carga docente, calendario, notificaciones y asistente IA ✅
+- **Carga docente:** tabla `teaching_assignments` (V12); `TeachingAssignmentController/Service`; UI `/cursos`.
+- **Calendario:** tabla `calendar_events` + ENUM `calendar_event_type` (V13); `CalendarEventController`; UI `/calendar`.
+- **Notificaciones in-app:** tabla `notifications` (V15); `NotificationController/Service`; `notifications` consumidas por la home del portal/parental.
+- **Asistente IA:** paquete `assistant/` (`AssistantController`, `AssistantService`, `AnthropicClient`, `OpenRouterClient`, `AssistantTools` con function-calling); cuota por plan vía `plans.features.aiMessagesPerMonth` (V11) y contadores en `ai_usage_counters` (V14).
+- **Aceptación:** el colegio puede asignar docentes, gestionar el calendario, recibir notificaciones in-app y usar el asistente con su cuota.
+
 ### Fase 7 — Endurecimiento para producción 🔄 (en curso)
-- [ ] `JWT_SECRET` y credenciales fuera del repo; `cookie-secure=true` + HTTPS.
-- [ ] Resolución de tenant por subdominio del Host en prod (no header).
-- [ ] Política de `max_students` por plan (enforcement real).
-- [ ] Estrategia de migración Flyway sobre **todos** los schemas de tenant en cada release.
+- [x] `JWT_SECRET` fuera del repo (`.env.dev` no trackeado desde `54f3fb5`); ⚠️ **rotar el valor actual** porque sigue en el histórico de `aebb0be`.
+- [ ] `cookie-secure=true` + HTTPS en prod — aplicado en `application.yml` (`prod`) pero falta smoke test E2E.
+- [x] Resolución de tenant por subdominio del Host en prod (`TenantInterceptor.resolveRequestedTenant`).
+- [ ] Política de `max_students` por plan (enforcement real) — `BR-1` sin implementar.
+- [ ] Estrategia de migración Flyway sobre **todos** los schemas de tenant en cada release — `TenantMigrationRunner` existe pero falta patrón resumible/paralelo.
 - [ ] Backups de PostgreSQL y del bucket S3; retención.
 - [ ] Observabilidad: métricas Actuator + alertas; logs estructurados.
-- [ ] Tests de integración multi-tenant (aislamiento) y de cobranza (concurrencia).
-- [ ] Rate limiting y endurecimiento CORS para dominios de producción.
+- [ ] Tests de integración multi-tenant (aislamiento) y de cobranza (concurrencia) — `TenantInterceptorTest` (135) e `InvoiceTest` (105) cubren los flujos happy-path; faltan tests de concurrencia.
+- [x] Rate limiting (`shared/security/AuthRateLimiter`) — falta endurecer CORS para dominios de producción.
 
-### Fase 8 — Portal de apoderados (PARENT) ⏳
-- [ ] Vistas de notas, asistencia y estado de cuenta del hijo.
-- [ ] Restricción de datos al núcleo familiar del usuario.
-- [ ] Onboarding del apoderado (invitación + primer login).
+### Fase 8 — Portal de apoderados (PARENT) ✅
+- [x] Vistas de notas, asistencia, pagos y calendario del hijo (`app/(parent)/portal/{page,notas,asistencia,pagos,calendario}`).
+- [x] Restricción de datos al núcleo familiar del usuario (`families.guardian_user_id` leído en queries; UI filtra por hijos).
+- [x] Onboarding del apoderado (sub-flujo de "vincular familia" desde el lado admin) — `CreateParentAccessDialog`, `LinkExistingFamilyDialog`, `SiblingSearchPicker`.
 
 ### Fase 9 — Pagos en línea y reportes ⏳
 - [ ] Integración de pasarela (Yape/Plin/tarjeta) + conciliación.
 - [ ] Reportes PDF (libreta de notas, recibos), reporte de morosidad.
 - [ ] Dashboards (feature de planes Pro/Enterprise).
 - [ ] Facturación del SaaS a los colegios (cobro de la suscripción).
+- Ver detalle en `plan_implementacion_modulo_reportes.md` y `contrato_eventos_kafka.md`.
 
 ---
 
@@ -99,11 +110,13 @@ Fase 9 ─ Pagos & reportes       ← pendiente
 
 ```
 Fase 0 ──► Fase 1 ──► Fase 2 ──► Fase 3 ──► Fase 4
-                         │                     │
-                         └──────► Fase 5 ◄─────┘
+                          │                     │
+                          └──────► Fase 5 ◄─────┘
 Fase 6 (paralela a 2–5)
-Fase 7 depende de 1–6 estables
-Fase 8/9 dependen de 7
+Fase 6b (paralela a 5–6) ──► carga docente, calendario, notificaciones, asistente IA
+Fase 7 depende de 1–6b estables
+Fase 8 depende de 6b (notifications + guardian_user_id)
+Fase 9 depende de 7
 ```
 
 ---

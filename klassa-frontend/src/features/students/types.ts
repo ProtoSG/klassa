@@ -12,6 +12,9 @@ export interface StudentResponse {
   status: StudentStatus
   familyId: number
   guardianName: string
+  /** Populated from student.family.guardianPhone when a family exists. Used by the
+   *  WhatsApp integration (attendance absence notification + billing payment reminder). */
+  guardianPhone: string | null
   photoUrl: string | null
 }
 
@@ -23,6 +26,8 @@ export interface FamilyResponse {
   address: string | null
   emergencyContact: string | null
   emergencyPhone: string | null
+  /** Email of the User account linked as this family's PARENT login, or null if none yet. */
+  linkedUserEmail: string | null
 }
 
 export type EnrollmentStatus = 'ACTIVE' | 'WITHDRAWN' | 'TRANSFERRED'
@@ -39,7 +44,6 @@ export interface EnrollmentResponse {
 }
 
 export interface UpdateStudentInput {
-  code: string
   firstName: string
   lastName: string
   birthDate: string
@@ -63,4 +67,17 @@ export interface PageResponse<T> {
   totalPages: number
   page: number
   size: number
+}
+
+export interface ImportRowError {
+  rowNumber: number
+  field: string
+  message: string
+}
+
+export interface ImportResult {
+  totalRows: number
+  successCount: number
+  failureCount: number
+  errors: ImportRowError[]
 }

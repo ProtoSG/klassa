@@ -75,14 +75,14 @@ export default function FeeSchedulesSection({ initialSchedules, academicYearId }
                   <TableCell className="text-sm text-ink">S/ {s.amount}</TableCell>
                   <TableCell className="text-sm text-prose">Día {s.dueDay}</TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-xs font-medium ${s.active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-muted-fill text-ghost border-line'}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-xs font-medium ${s.active ? 'bg-accent/30 text-ink border-accent/50' : 'bg-muted-fill text-ghost border-line'}`}>
                       {s.active ? 'Activo' : 'Inactivo'}
                     </span>
                   </TableCell>
                   <TableCell>
                     <button
                       onClick={() => setDeleteTarget(s)}
-                      className="p-1.5 rounded-lg text-ghost hover:text-red-500 hover:bg-red-50 transition-colors duration-150"
+                      className="p-1.5 rounded-lg text-ghost hover:text-danger hover:bg-danger/10 transition-colors duration-150"
                     >
                       <Trash2 size={14} />
                     </button>

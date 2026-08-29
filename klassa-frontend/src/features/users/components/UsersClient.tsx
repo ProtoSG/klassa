@@ -207,7 +207,7 @@ export default function UsersClient({ initialUsers, initialInactiveUsers }: Prop
                       <button
                         onClick={() => handleActivate(u)}
                         disabled={isActivating}
-                        className="p-1.5 rounded-lg text-ghost hover:text-emerald-600 hover:bg-emerald-50 transition-colors duration-150 disabled:opacity-40"
+                        className="p-1.5 rounded-lg text-ghost hover:text-ink hover:bg-accent/20 transition-colors duration-150 disabled:opacity-40"
                         title="Reactivar"
                       >
                         <UserCheck size={14} />
@@ -223,7 +223,7 @@ export default function UsersClient({ initialUsers, initialInactiveUsers }: Prop
                         </button>
                         <button
                           onClick={() => setDeactivateTarget(u)}
-                          className="p-1.5 rounded-lg text-ghost hover:text-red-500 hover:bg-red-50 transition-colors duration-150"
+                          className="p-1.5 rounded-lg text-ghost hover:text-danger hover:bg-danger/10 transition-colors duration-150"
                           title="Desactivar"
                         >
                           <UserX size={14} />

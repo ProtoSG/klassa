@@ -1,9 +1,9 @@
 import type { InvoiceStatus } from '../types'
 
 const CONFIG: Record<InvoiceStatus, { label: string; classes: string }> = {
-  PENDING:   { label: 'Pendiente',    classes: 'bg-amber-50 text-amber-700 border-amber-200' },
-  PAID:      { label: 'Pagada',       classes: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  OVERDUE:   { label: 'Vencida',      classes: 'bg-red-50 text-red-700 border-red-200' },
+  PENDING:   { label: 'Pendiente',    classes: 'bg-warning/10 text-warning border-warning/30' },
+  PAID:      { label: 'Pagada',       classes: 'bg-accent/30 text-ink border-accent/50' },
+  OVERDUE:   { label: 'Vencida',      classes: 'bg-danger/10 text-danger border-danger/30' },
   PARTIAL:   { label: 'Parcial',      classes: 'bg-blue-50 text-blue-700 border-blue-200' },
   CANCELLED: { label: 'Cancelada',    classes: 'bg-muted-fill text-ghost border-line' },
 }

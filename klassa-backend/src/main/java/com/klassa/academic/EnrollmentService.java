@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -48,17 +49,19 @@ public class EnrollmentService {
         long activeCount = enrollmentRepository.countActiveBySectionId(request.sectionId());
         section.assertHasCapacity((int) activeCount);
 
-        enrollmentRepository.findByStudentIdAndSectionId(request.studentId(), request.sectionId())
-                .ifPresent(e -> {
-                    if (e.getStatus() == EnrollmentStatus.ACTIVE) {
-                        throw new BusinessRuleException(ErrorCode.ALREADY_ENROLLED);
-                    }
-                });
+        var existing = enrollmentRepository.findByStudentIdAndSectionId(request.studentId(), request.sectionId());
+        if (existing.isPresent() && existing.get().getStatus() == EnrollmentStatus.ACTIVE) {
+            throw new BusinessRuleException(ErrorCode.ALREADY_ENROLLED);
+        }
+        Enrollment enrollment = existing.orElseGet(Enrollment::new);
 
-        Enrollment enrollment = new Enrollment();
+        // Re-enrolling a previously withdrawn/transferred student reactivates the existing row
+        // instead of inserting a new one — a second row for the same (student, section) pair
+        // would violate the uq_enrollments_student_section constraint.
         enrollment.setStudent(student);
         enrollment.setSection(section);
         enrollment.setStatus(EnrollmentStatus.ACTIVE);
+        enrollment.setEnrolledAt(LocalDateTime.now());
         return academicMapper.toEnrollmentResponse(enrollmentRepository.save(enrollment));
     }
 

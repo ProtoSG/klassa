@@ -4,6 +4,7 @@ import com.klassa.shared.multitenancy.TenantContext;
 import com.klassa.shared.security.AuthRateLimiter;
 import com.klassa.shared.security.JwtService;
 import com.klassa.shared.web.ApiResponse;
+import com.klassa.shared.web.ClientIpResolver;
 import com.klassa.user.dto.LoginRequest;
 import com.klassa.user.dto.LoginResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -93,11 +94,7 @@ public class PlatformAuthController {
     }
 
     private String clientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return ClientIpResolver.resolve(request);
     }
 
     private ResponseCookie buildCookie(String value, long maxAgeMillis) {

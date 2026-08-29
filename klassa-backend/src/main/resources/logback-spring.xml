@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!--
+      Two profiles match the Spring `spring.profiles.active`:
+        - ROOT / dev  → human-readable colored pattern + MDC fields inline
+        - prod        → JSON (logstash-encoder), one log event per line, ready for
+                        Datadog / Loki / CloudWatch ingestion
+
+      MDC fields populated by LogContextFilter:
+        - tenantId:   current tenant subdomain (or "platform")
+        - userId:     authenticated user's id (when authenticated)
+        - requestId:  inbound X-Request-Id header value or freshly minted UUID,
+                      mirrored back as response header X-Request-Id
+    -->
+
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- Dev: pretty, with MDC field columns -->
+    <appender name="CONSOLE_DEV" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{requestId:-} tid=%X{tenantId:-} uid=%X{userId:-}] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Prod: JSON line per event, includes all MDC fields as top-level keys -->
+    <appender name="CONSOLE_PROD" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeContext>false</includeContext>
+            <includeMdc>true</includeMdc>
+            <!-- ISO-8601 with millis and offset, e.g. 2026-08-16T19:53:28.123-05:00 -->
+            <timestampPattern>yyyy-MM-dd'T'HH:mm:ss.SSSXXX</timestampPattern>
+            <fieldNames>
+                <timestamp>@timestamp</timestamp>
+                <message>message</message>
+                <thread>thread</thread>
+                <logger>logger</logger>
+                <level>level</level>
+            </fieldNames>
+        </encoder>
+    </appender>
+
+    <!-- Spring profiles decide which appender is active -->
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE_PROD"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="!prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE_DEV"/>
+        </root>
+        <!-- Tighten app-only logs to DEBUG in dev; keep third-party at INFO -->
+        <logger name="com.klassa" level="DEBUG"/>
+        <logger name="org.hibernate.SQL" level="INFO"/>
+        <logger name="org.springframework.security" level="INFO"/>
+        <logger name="org.springframework.web" level="INFO"/>
+    </springProfile>
+
+    <!-- Quiet noisy third-party libs even in prod -->
+    <logger name="org.apache.tomcat" level="WARN"/>
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+
+</configuration>

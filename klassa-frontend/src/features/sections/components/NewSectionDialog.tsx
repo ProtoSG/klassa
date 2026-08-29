@@ -12,20 +12,22 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import type { GradeLevel } from '@/features/grade-levels/types'
+import type { UserResponse } from '@/features/users/types'
 
 interface Props {
   academicYearId: number
   gradeLevels: GradeLevel[]
+  teachers: UserResponse[]
 }
 
-export default function NewSectionDialog({ academicYearId, gradeLevels }: Props) {
+export default function NewSectionDialog({ academicYearId, gradeLevels, teachers }: Props) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
   const form = useForm<CreateSectionInput>({
     resolver: zodResolver(createSectionSchema),
-    defaultValues: { name: '', gradeLevelId: 0, academicYearId, maxCapacity: 30 },
+    defaultValues: { name: '', gradeLevelId: 0, academicYearId, homeroomTeacherId: null, maxCapacity: 30 },
     mode: 'onTouched',
   })
 
@@ -83,6 +85,22 @@ export default function NewSectionDialog({ academicYearId, gradeLevels }: Props)
               <FormItem>
                 <FormLabel>Capacidad máxima</FormLabel>
                 <FormControl><Input type="number" min={1} max={100} {...field} onChange={(e) => field.onChange(Number(e.target.value))} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="homeroomTeacherId" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Profesor tutor <span className="text-ghost font-normal">(opcional)</span></FormLabel>
+                <FormControl>
+                  <select
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
+                    className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/70"
+                  >
+                    <option value="">Sin asignar</option>
+                    {teachers.map((t) => <option key={t.id} value={t.id}>{t.fullName}</option>)}
+                  </select>
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />

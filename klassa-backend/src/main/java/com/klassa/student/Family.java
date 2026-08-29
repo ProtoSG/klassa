@@ -1,6 +1,7 @@
 package com.klassa.student;
 
 import com.klassa.shared.domain.BaseEntity;
+import com.klassa.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,6 +16,10 @@ public class Family extends BaseEntity {
 
     @Column(nullable = false, length = 200)
     private String guardianName;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guardian_user_id")
+    private User guardianUser;
 
     @Column(length = 200)
     private String guardianEmail;

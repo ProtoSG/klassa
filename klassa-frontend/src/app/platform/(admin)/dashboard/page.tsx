@@ -24,7 +24,7 @@ export default async function PlatformDashboardPage() {
       <StatsCards tenants={tenants} />
 
       <div>
-        <h2 className="text-sm font-medium text-prose mb-3">
+        <h2 className="text-sm font-medium text-prose mb-4">
           Todos los colegios ({tenants.length})
         </h2>
         <TenantTable tenants={tenants} />

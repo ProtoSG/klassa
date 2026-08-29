@@ -3,8 +3,11 @@ package com.klassa.billing;
 import com.klassa.billing.dto.GenerateInvoicesRequest;
 import com.klassa.billing.dto.InvoiceRequest;
 import com.klassa.billing.dto.InvoiceResponse;
+import com.klassa.notification.NotificationService;
+import com.klassa.notification.NotificationType;
 import com.klassa.shared.exception.EntityNotFoundException;
 import com.klassa.shared.web.PageResponse;
+import com.klassa.student.Family;
 import com.klassa.student.Student;
 import com.klassa.student.StudentRepository;
 import org.springframework.data.domain.Page;
@@ -29,17 +32,20 @@ public class InvoiceService {
     private final StudentRepository studentRepository;
     private final PaymentRepository paymentRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final NotificationService notificationService;
 
     public InvoiceService(InvoiceRepository invoiceRepository,
                           FeeScheduleRepository feeScheduleRepository,
                           StudentRepository studentRepository,
                           PaymentRepository paymentRepository,
-                          JdbcTemplate jdbcTemplate) {
+                          JdbcTemplate jdbcTemplate,
+                          NotificationService notificationService) {
         this.invoiceRepository = invoiceRepository;
         this.feeScheduleRepository = feeScheduleRepository;
         this.studentRepository = studentRepository;
         this.paymentRepository = paymentRepository;
         this.jdbcTemplate = jdbcTemplate;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -110,6 +116,22 @@ public class InvoiceService {
                 LocalDate.now(), List.of(InvoiceStatus.PENDING, InvoiceStatus.PARTIAL));
         overdue.forEach(Invoice::markOverdue);
         invoiceRepository.saveAll(overdue);
+        overdue.forEach(this::notifyGuardianOfOverdueInvoice);
+    }
+
+    // Best-effort: a guardian not (yet) linked to a portal account just means no notification
+    // fires — never let that block marking the invoice itself overdue.
+    private void notifyGuardianOfOverdueInvoice(Invoice invoice) {
+        Student student = invoice.getStudent();
+        Family family = student.getFamily();
+        if (family == null || family.getGuardianUser() == null) return;
+        notificationService.notify(
+                family.getGuardianUser().getId(),
+                NotificationType.INVOICE_OVERDUE,
+                "Factura vencida",
+                "La factura de %s (%s) por S/ %.2f está vencida.".formatted(
+                        student.fullName(), invoice.getConcept(), invoice.getAmount()),
+                student.getId());
     }
 
     // Single-invoice path (create, findById, cancel, payments): one sum query.

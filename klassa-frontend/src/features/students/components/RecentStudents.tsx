@@ -18,7 +18,7 @@ const statusLabel: Record<string, string> = {
 const statusStyle: Record<string, string> = {
   ACTIVE: 'bg-accent/30 text-ink/80',
   INACTIVE: 'bg-muted-fill text-prose',
-  TRANSFERRED: 'bg-amber-100 text-amber-700',
+  TRANSFERRED: 'bg-warning/15 text-warning',
 }
 
 export default function RecentStudents({ students }: { students: StudentResponse[] }) {

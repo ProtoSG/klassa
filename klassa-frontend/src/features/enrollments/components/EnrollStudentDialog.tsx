@@ -61,7 +61,7 @@ export default function EnrollStudentDialog({ sectionId, students }: Props) {
       <Dialog open={open} onClose={handleClose} title="Matricular alumno" className="max-w-sm">
         <div className="flex flex-col gap-4">
           {selectedStudent ? (
-            <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <div className="flex items-center justify-between rounded-xl border border-accent/40 bg-accent/15 px-4 py-3">
               <div>
                 <p className="text-sm font-medium text-ink">{selectedStudent.fullName}</p>
                 <p className="text-xs text-ghost mt-0.5">{selectedStudent.code}</p>

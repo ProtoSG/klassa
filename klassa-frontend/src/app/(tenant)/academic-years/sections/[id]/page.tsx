@@ -5,9 +5,15 @@ import { getSectionById } from '@/features/sections/api'
 import { getEnrollmentsBySection } from '@/features/enrollments/api'
 import { getSubjects } from '@/features/subjects/api'
 import { getStudentPage } from '@/features/students/api'
+import { getUsers } from '@/features/users/api'
+import { getTeachingAssignmentsBySection } from '@/features/teaching-assignments/api'
+import { getMe } from '@/features/auth/actions'
 import SectionEnrollments from '@/features/enrollments/components/SectionEnrollments'
 import EnrollStudentDialog from '@/features/enrollments/components/EnrollStudentDialog'
 import SectionScores from '@/features/scores/components/SectionScores'
+import SectionCourses from '@/features/teaching-assignments/components/SectionCourses'
+import ErrorState from '@/shared/components/ErrorState'
+import { logFetchError } from '@/shared/lib/log-error'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -19,18 +25,25 @@ export default async function SectionDetailPage({ params }: Props) {
 
   if (isNaN(sectionId)) notFound()
 
-  const [section, enrollments, subjects, studentsPage] = await Promise.all([
-    getSectionById(sectionId).catch(() => null),
-    getEnrollmentsBySection(sectionId).catch(() => []),
-    getSubjects().catch(() => []),
-    getStudentPage({ size: 300, status: 'ACTIVE' }).catch(() => ({ content: [] })),
-  ])
-
+  const section = await getSectionById(sectionId).catch((err) => { logFetchError('section-detail', err); return null })
   if (!section) notFound()
 
-  const activeEnrollments = enrollments.filter((e) => e.status === 'ACTIVE')
-  const enrolledStudentIds = new Set(enrollments.map((e) => e.studentId))
-  const availableStudents = studentsPage.content.filter((s) => !enrolledStudentIds.has(s.id))
+  const session = await getMe()
+  const canManage = session?.user.role !== 'TEACHER'
+
+  const [enrollments, gradeSubjects, studentsPage, teachers, teachingAssignments] = await Promise.all([
+    getEnrollmentsBySection(sectionId).catch((err) => { logFetchError('section-enrollments', err); return null }),
+    getSubjects(section.gradeLevelId).catch(() => []),
+    getStudentPage({ size: 300, status: 'ACTIVE' }).catch(() => ({ content: [] })),
+    getUsers('TEACHER').catch(() => []),
+    getTeachingAssignmentsBySection(sectionId).catch(() => []),
+  ])
+
+  const activeEnrollments = enrollments?.filter((e) => e.status === 'ACTIVE') ?? []
+  const activeStudentIds = new Set(activeEnrollments.map((e) => e.studentId))
+  const availableStudents = studentsPage.content.filter((s) => !activeStudentIds.has(s.id))
+  const assignedSubjectIds = new Set(teachingAssignments.map((a) => a.subjectId))
+  const gradableSubjects = gradeSubjects.filter((s) => assignedSubjectIds.has(s.id))
 
   return (
     <div className="flex flex-col gap-5 px-4 md:px-8 max-w-7xl mx-auto">
@@ -50,7 +63,7 @@ export default async function SectionDetailPage({ params }: Props) {
             <span>{section.academicYearName}</span>
             <span className="text-ghost">·</span>
             <span>
-              <span className={section.activeEnrollments >= section.maxCapacity ? 'text-red-600 font-medium' : ''}>
+              <span className={section.activeEnrollments >= section.maxCapacity ? 'text-warning font-medium' : ''}>
                 {section.activeEnrollments}
               </span>
               /{section.maxCapacity} alumnos
@@ -65,16 +78,29 @@ export default async function SectionDetailPage({ params }: Props) {
         </div>
       </div>
 
+      {/* Teaching assignments */}
+      <SectionCourses
+        sectionId={sectionId}
+        initialAssignments={teachingAssignments}
+        subjects={gradeSubjects}
+        teachers={teachers}
+        canManage={canManage}
+      />
+
       {/* Enrollments */}
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium text-prose">Matriculados ({activeEnrollments.length})</h2>
-        <EnrollStudentDialog sectionId={sectionId} students={availableStudents} />
+        {canManage && enrollments && <EnrollStudentDialog sectionId={sectionId} students={availableStudents} />}
       </div>
-      <SectionEnrollments initialEnrollments={enrollments} />
+      {enrollments ? (
+        <SectionEnrollments initialEnrollments={enrollments} canManage={canManage} />
+      ) : (
+        <ErrorState message="Error al cargar los matriculados." />
+      )}
 
       {/* Scores — selector per student */}
       {activeEnrollments.length > 0 && (
-        <SectionScores enrollments={activeEnrollments} subjects={subjects} />
+        <SectionScores enrollments={activeEnrollments} subjects={gradableSubjects} />
       )}
     </div>
   )

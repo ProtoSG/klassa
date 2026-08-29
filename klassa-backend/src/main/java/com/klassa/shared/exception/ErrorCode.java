@@ -22,6 +22,13 @@ public enum ErrorCode {
     PHOTO_INVALID_FORMAT("Formatos de imagen permitidos: JPEG, PNG"),
     PHOTO_TOO_LARGE("La imagen no debe superar 5 MB"),
 
+    // --- Student import ---
+    IMPORT_INVALID_FORMAT("El archivo debe ser un Excel (.xlsx)"),
+    IMPORT_EMPTY_FILE("El archivo está vacío"),
+    IMPORT_UNREADABLE_FILE("No se pudo leer el archivo. Verifica que sea un Excel válido"),
+    IMPORT_INVALID_TEMPLATE("El archivo no coincide con la plantilla esperada (encabezados incorrectos)"),
+    IMPORT_TOO_MANY_ROWS("El archivo supera el máximo de %d filas permitidas"),
+
     // --- Academic year ---
     ACADEMIC_YEAR_ALREADY_CLOSED("El año académico ya está cerrado"),
     ACADEMIC_YEAR_INVALID_DATES("La fecha de fin debe ser posterior a la fecha de inicio"),
@@ -32,6 +39,13 @@ public enum ErrorCode {
     ALREADY_ENROLLED("El alumno ya está matriculado en esta sección"),
     ENROLLMENT_NOT_ACTIVE("La matrícula no está activa"),
     ENROLLMENT_NOT_ACTIVE_TRANSFER("Solo se puede trasladar una matrícula activa"),
+
+    // --- Teaching assignments ---
+    SUBJECT_GRADE_LEVEL_MISMATCH("La materia no pertenece al grado de la sección"),
+    USER_NOT_TEACHER("El usuario seleccionado no tiene el rol de docente"),
+
+    // --- Calendar events ---
+    CALENDAR_EVENT_INVALID_DATES("La fecha de fin debe ser igual o posterior a la fecha de inicio"),
 
     // --- Attendance / score ---
     ATTENDANCE_INACTIVE_ENROLLMENT("No se puede registrar asistencia en una matrícula inactiva"),
@@ -44,15 +58,29 @@ public enum ErrorCode {
     INVOICE_ALREADY_PAID("La factura %s ya está pagada"),
     INVOICE_CANCELLED("La factura %s está anulada"),
 
+    // --- Family / guardian ---
+    FAMILY_ALREADY_LINKED("La familia ya tiene un apoderado vinculado"),
+    FAMILY_NOT_LINKED("Tu cuenta no está vinculada a ningún alumno todavía"),
+
     // --- Tenant ---
     SUBDOMAIN_TAKEN("El subdominio '%s' ya está en uso"),
     INVALID_TENANT_TRANSITION("No se puede cambiar el estado de %s a %s"),
+    PLAN_BELOW_CURRENT_USAGE("El colegio tiene %d alumnos activos, más que el límite de %d del nuevo plan"),
+    TENANT_NOT_CANCELLED("Solo se pueden purgar los datos de un colegio cancelado"),
+    TENANT_ALREADY_PURGED("Los datos de este colegio ya fueron purgados"),
+    MODULE_NOT_INCLUDED_IN_PLAN("El módulo '%s' no está disponible en tu plan actual. Actualiza tu suscripción para acceder."),
+    STUDENT_LIMIT_REACHED("El colegio alcanzó el límite de %d alumnos del plan actual. Actualiza tu suscripción para agregar más."),
 
     // --- User / auth ---
     EMAIL_TAKEN("El correo '%s' ya está registrado"),
     INVALID_CREDENTIALS("Credenciales inválidas"),
     PASSWORD_CHANGE_REQUIRED("Debes cambiar tu contraseña antes de continuar"),
-    ACCESS_DENIED("Acceso denegado");
+    ACCESS_DENIED("Acceso denegado"),
+
+    // --- Assistant ---
+    ASSISTANT_QUOTA_EXCEEDED("Se alcanzó el límite mensual de consultas al asistente para el plan actual"),
+    ASSISTANT_UNAVAILABLE("El asistente no está disponible en este momento, intenta más tarde"),
+    ASSISTANT_TOO_MANY_MESSAGES("La conversación supera el máximo de %d mensajes permitidos");
 
     private final String messageTemplate;
 

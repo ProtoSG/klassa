@@ -1,6 +1,7 @@
 package com.klassa.tenant;
 
 import com.klassa.config.FlywayConfig;
+import com.klassa.plan.PlanService;
 import com.klassa.shared.exception.BusinessRuleException;
 import com.klassa.shared.exception.ErrorCode;
 import com.klassa.shared.exception.EntityNotFoundException;
@@ -10,6 +11,8 @@ import com.klassa.tenant.dto.TenantProvisionResponse;
 import com.klassa.tenant.dto.TenantRequest;
 import com.klassa.tenant.dto.TenantResponse;
 import com.klassa.user.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.cache.annotation.CacheEvict;
@@ -26,23 +29,36 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class TenantService {
 
+    private static final Logger log = LoggerFactory.getLogger(TenantService.class);
+
+    // Plans at or above this cap are treated as "unlimited" (matches the frontend's own
+    // `maxStudents >= 9999` convention in Pricing.tsx) — no usage check needed against them.
+    private static final int UNLIMITED_PLAN_THRESHOLD = 9999;
+
     private final TenantRepository tenantRepository;
     private final PlanRepository planRepository;
     private final FlywayConfig flywayConfig;
     private final JdbcTemplate jdbcTemplate;
     private final UserService userService;
+    private final PlanService planService;
+    private final TenantStudentCounter tenantStudentCounter;
     // Self-reference (proxied) so provisionWithAdmin can call createTenant through the Spring
     // proxy and trigger its @Transactional; a plain this.createTenant(...) would bypass it.
     private final TenantService self;
 
     public TenantService(TenantRepository tenantRepository, PlanRepository planRepository,
                          FlywayConfig flywayConfig, JdbcTemplate jdbcTemplate,
-                         UserService userService, @Lazy TenantService self) {
+                         UserService userService,
+                         PlanService planService,
+                         TenantStudentCounter tenantStudentCounter,
+                         @Lazy TenantService self) {
         this.tenantRepository = tenantRepository;
         this.planRepository = planRepository;
         this.flywayConfig = flywayConfig;
         this.jdbcTemplate = jdbcTemplate;
         this.userService = userService;
+        this.planService = planService;
+        this.tenantStudentCounter = tenantStudentCounter;
         this.self = self;
     }
 
@@ -90,10 +106,24 @@ public class TenantService {
                     request.adminEmail(), tempPassword,
                     request.adminFirstName(), request.adminLastName());
         } catch (Exception e) {
-            // DDL (CREATE SCHEMA) already committed — clean up tenant record manually
-            tenantRepository.findBySubdomain(request.subdomain())
-                    .ifPresent(tenantRepository::delete);
-            jdbcTemplate.execute("DROP SCHEMA IF EXISTS \"" + request.subdomain() + "\" CASCADE");
+            // DDL (CREATE SCHEMA) already committed — clean up manually. Each step is isolated
+            // so one failing (e.g. the row delete) doesn't prevent the other (the schema drop)
+            // from being attempted, and both failures are logged with enough detail to fix by
+            // hand instead of silently swallowing a half-cleaned-up tenant.
+            log.error("Tenant provisioning failed for '{}' after schema creation — rolling back",
+                    request.subdomain(), e);
+            try {
+                tenantRepository.findBySubdomain(request.subdomain())
+                        .ifPresent(tenantRepository::delete);
+            } catch (Exception cleanupEx) {
+                log.error("Rollback: failed to delete tenant row for '{}'", request.subdomain(), cleanupEx);
+            }
+            try {
+                dropTenantSchema(request.subdomain());
+            } catch (Exception cleanupEx) {
+                log.error("Rollback: failed to drop schema for '{}' — manual cleanup required",
+                        request.subdomain(), cleanupEx);
+            }
             throw e;
         } finally {
             TenantContext.clear();
@@ -131,8 +161,49 @@ public class TenantService {
                 .orElseThrow(() -> new EntityNotFoundException("Tenant", "subdomain", subdomain));
         Plan plan = planRepository.findById(planId)
                 .orElseThrow(() -> new EntityNotFoundException("Plan", planId));
+
+        if (plan.getMaxStudents() < UNLIMITED_PLAN_THRESHOLD) {
+            long activeStudents = tenantStudentCounter.countActiveStudentsByTenant(subdomain);
+            if (activeStudents > plan.getMaxStudents()) {
+                throw new BusinessRuleException(ErrorCode.PLAN_BELOW_CURRENT_USAGE, activeStudents, plan.getMaxStudents());
+            }
+        }
+
         tenant.setPlan(plan);
-        return toResponse(tenantRepository.save(tenant));
+        TenantResponse response = toResponse(tenantRepository.save(tenant));
+        // Drop the cached plan features so the very next request — including the ones from
+        // BillingController / AssistantController behind @RequiresModule — sees the new caps.
+        planService.evictCache(subdomain);
+        return response;
+    }
+
+    /**
+     * Drops a CANCELLED tenant's Postgres schema for good. Only callable once per tenant
+     * (guarded by {@code purgedAt}); the platform-side {@code tenants} row is kept as a
+     * tombstone so the subdomain can't be silently reused and who/when is still on record
+     * (via the existing {@code user_updated}/{@code date_updated} JPA auditing columns).
+     */
+    @Transactional
+    @CacheEvict(value = "tenants", key = "#subdomain")
+    public TenantResponse purgeData(String subdomain) {
+        Tenant tenant = tenantRepository.findBySubdomain(subdomain)
+                .orElseThrow(() -> new EntityNotFoundException("Tenant", "subdomain", subdomain));
+        if (tenant.getStatus() != TenantStatus.CANCELLED) {
+            throw new BusinessRuleException(ErrorCode.TENANT_NOT_CANCELLED);
+        }
+        if (tenant.getPurgedAt() != null) {
+            throw new BusinessRuleException(ErrorCode.TENANT_ALREADY_PURGED);
+        }
+
+        dropTenantSchema(subdomain);
+        tenant.setPurgedAt(LocalDateTime.now());
+        TenantResponse response = toResponse(tenantRepository.save(tenant));
+        log.warn("Tenant data purged: subdomain={} name={}", subdomain, tenant.getName());
+        return response;
+    }
+
+    private void dropTenantSchema(String schemaName) {
+        jdbcTemplate.execute("DROP SCHEMA IF EXISTS \"" + schemaName + "\" CASCADE");
     }
 
     private void provisionSchema(String schemaName) {
@@ -151,7 +222,8 @@ public class TenantService {
                 t.getPlan().getId(),
                 t.getPlan().getName(),
                 t.getTrialEndsAt(),
-                t.getCreatedAt()
+                t.getCreatedAt(),
+                t.getPurgedAt()
         );
     }
 }

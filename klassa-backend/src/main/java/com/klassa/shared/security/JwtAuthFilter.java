@@ -1,11 +1,13 @@
 package com.klassa.shared.security;
 
+import com.klassa.shared.logging.LogContextFilter;
 import com.klassa.shared.multitenancy.TenantContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,6 +22,9 @@ import java.util.Optional;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
+
+    /** MDC key for the authenticated user's id. Mirrored by {@link LogContextFilter}'s clearing. */
+    public static final String MDC_USER_ID = "userId";
 
     private final JwtService jwtService;
     private final String cookieName;
@@ -38,6 +43,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 .flatMap(jwtService::extractSecurityUser)
                 .ifPresent(securityUser -> {
                     TenantContext.setCurrentTenant(securityUser.tenantId());
+                    MDC.put(MDC_USER_ID, String.valueOf(securityUser.userId()));
 
                     UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                             securityUser, null, securityUser.getAuthorities());

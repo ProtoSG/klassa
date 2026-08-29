@@ -13,6 +13,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     List<Invoice> findAllByStudentId(Long studentId);
 
+    boolean existsByIdAndStudentFamilyGuardianUserId(Long id, Long userId);
+
     Page<Invoice> findAllByStudentId(Long studentId, Pageable pageable);
 
     List<Invoice> findAllByStudentIdAndStatus(Long studentId, InvoiceStatus status);

@@ -47,7 +47,7 @@ export default function AcademicYearActions({ year }: Props) {
         <button
           onClick={() => setConfirmOpen(true)}
           disabled={isPending}
-          className="text-xs text-ghost hover:text-red-600 transition-colors disabled:opacity-50"
+          className="text-xs text-ghost hover:text-danger transition-colors disabled:opacity-50"
         >
           Cerrar
         </button>

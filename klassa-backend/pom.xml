@@ -23,6 +23,8 @@
         <springdoc.version>2.8.8</springdoc.version>
         <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
         <aws.sdk.version>2.29.52</aws.sdk.version>
+        <!-- Verified current stable release on Maven Central (2026-07) -->
+        <poi.version>5.5.1</poi.version>
     </properties>
 
     <dependencyManagement>
@@ -134,6 +136,13 @@
             <version>0.4.20</version>
         </dependency>
 
+        <!-- Excel (.xlsx) parsing for bulk student import -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>${poi.version}</version>
+        </dependency>
+
         <!-- DevTools -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -152,6 +161,15 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <!-- Structured JSON logs to stdout — picked up by container log collectors
+             (Docker, Datadog, Loki, etc.) and indexed by tenantId/userId/requestId
+             fields populated by RequestContextFilter. -->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>8.0</version>
         </dependency>
     </dependencies>
 

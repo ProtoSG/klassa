@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { Dialog } from '@/shared/components/Dialog'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Button } from '@/components/ui/button'
 import { generateMonthlyInvoices } from '../actions'
@@ -27,6 +28,7 @@ interface Props {
 export default function GenerateMonthlyDialog({ academicYearId, feeSchedules, onGenerated }: Props) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [pendingValues, setPendingValues] = useState<FormValues | null>(null)
 
   const today = new Date().toISOString().split('T')[0]
 
@@ -43,6 +45,18 @@ export default function GenerateMonthlyDialog({ academicYearId, feeSchedules, on
   }
 
   function onSubmit(values: FormValues) {
+    setPendingValues(values)
+  }
+
+  function handleConfirmClose() {
+    if (isPending) return
+    setPendingValues(null)
+  }
+
+  function handleConfirmGenerate() {
+    if (!pendingValues) return
+    const values = pendingValues
+    setPendingValues(null)
     startTransition(async () => {
       try {
         await generateMonthlyInvoices({
@@ -60,6 +74,16 @@ export default function GenerateMonthlyDialog({ academicYearId, feeSchedules, on
   }
 
   const activeSchedules = feeSchedules.filter((s) => s.active)
+  const selectedSchedule = pendingValues
+    ? activeSchedules.find((s) => String(s.id) === pendingValues.feeScheduleId)
+    : null
+  const formattedDueDate = pendingValues
+    ? new Date(pendingValues.dueDate + 'T00:00:00').toLocaleDateString('es-PE', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    : ''
 
   return (
     <>
@@ -100,11 +124,26 @@ export default function GenerateMonthlyDialog({ academicYearId, feeSchedules, on
             )} />
             <div className="flex gap-2 justify-end pt-1">
               <Button type="button" variant="outline" size="sm" onClick={handleClose} disabled={isPending}>Cancelar</Button>
-              <Button type="submit" size="sm" disabled={isPending}>{isPending ? 'Generando...' : 'Generar'}</Button>
+              <Button type="submit" size="sm" disabled={isPending}>Continuar</Button>
             </div>
           </form>
         </Form>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!pendingValues}
+        onClose={handleConfirmClose}
+        onConfirm={handleConfirmGenerate}
+        title="¿Generar mensualidades para todos los alumnos activos?"
+        description={
+          selectedSchedule
+            ? `Se crearán facturas de "${selectedSchedule.concept}" (S/ ${selectedSchedule.amount}) con vencimiento el ${formattedDueDate} para cada alumno activo del año académico. Las facturas ya pagadas no se duplican.`
+            : `Se crearán facturas con vencimiento el ${formattedDueDate} para cada alumno activo del año académico.`
+        }
+        confirmLabel="Generar"
+        danger
+        loading={isPending}
+      />
     </>
   )
 }

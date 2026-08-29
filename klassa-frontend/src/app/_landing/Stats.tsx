@@ -8,15 +8,14 @@ export default function Stats() {
   return (
     <section
       id="estadisticas"
-      className="py-24"
-      style={{ backgroundColor: 'rgb(216, 249, 184, 0.15)' }}
+      className="py-24 bg-accent/15"
     >
       <div className="max-w-7xl mx-auto px-6 md:px-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Large card */}
           <div className="md:col-span-2 bg-white rounded-2xl p-8 md:p-12 shadow-card border border-line">
             <span className="inline-flex items-center gap-1.5 bg-accent/30 text-ink text-xs font-medium px-3 py-1 rounded-full mb-4">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              <span className="w-1.5 h-1.5 rounded-full bg-ink/50" />
               Plataforma completa
             </span>
             <h2 className="text-3xl md:text-4xl font-medium text-ink max-w-xl leading-tight">

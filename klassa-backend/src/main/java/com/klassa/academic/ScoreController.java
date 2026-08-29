@@ -33,7 +33,17 @@ public class ScoreController {
                 .body(ApiResponse.created(scoreService.save(request)));
     }
 
+    // Score reads are section-level for TEACHER (homeroom tutor OR any subject teacher in the
+    // section) — deliberately broader than AttendanceController's homeroom-only OWNS_ENROLLMENT,
+    // since GET /scores/enrollment/{id} returns all subjects for a student in one call.
+    private static final String CAN_VIEW_SCORES =
+            "hasRole('ADMIN') " +
+            "or (hasRole('TEACHER') and (@academicSecurity.ownsEnrollment(#enrollmentId, authentication.principal.userId) " +
+            "or @academicSecurity.teachesInEnrollmentSection(#enrollmentId, authentication.principal.userId))) " +
+            "or (hasRole('PARENT') and @familySecurity.ownsEnrollment(#enrollmentId, authentication.principal.userId))";
+
     @GetMapping("/enrollment/{enrollmentId}")
+    @PreAuthorize(CAN_VIEW_SCORES)
     public ResponseEntity<ApiResponse<List<ScoreResponse>>> findByEnrollment(
             @PathVariable Long enrollmentId,
             @RequestParam(required = false) Integer period) {
@@ -44,11 +54,13 @@ public class ScoreController {
     }
 
     @GetMapping("/enrollment/{enrollmentId}/average")
+    @PreAuthorize(CAN_VIEW_SCORES)
     public ResponseEntity<ApiResponse<BigDecimal>> getAverage(@PathVariable Long enrollmentId) {
         return ResponseEntity.ok(ApiResponse.ok(scoreService.getAverage(enrollmentId)));
     }
 
     @GetMapping("/enrollment/{enrollmentId}/average/period/{period}")
+    @PreAuthorize(CAN_VIEW_SCORES)
     public ResponseEntity<ApiResponse<BigDecimal>> getPeriodAverage(
             @PathVariable Long enrollmentId, @PathVariable Integer period) {
         return ResponseEntity.ok(ApiResponse.ok(scoreService.getPeriodAverage(enrollmentId, period)));

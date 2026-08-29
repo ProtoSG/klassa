@@ -5,12 +5,17 @@ import com.klassa.academic.EnrollmentRepository;
 import com.klassa.attendance.dto.AttendancePercentageResponse;
 import com.klassa.attendance.dto.AttendanceRequest;
 import com.klassa.attendance.dto.AttendanceResponse;
+import com.klassa.notification.NotificationService;
+import com.klassa.notification.NotificationType;
 import com.klassa.shared.exception.BusinessRuleException;
 import com.klassa.shared.exception.ErrorCode;
 import com.klassa.shared.exception.EntityNotFoundException;
 import com.klassa.shared.security.SecurityUser;
+import com.klassa.student.Family;
 import com.klassa.user.UserRepository;
+import com.klassa.user.UserRole;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -28,15 +33,18 @@ public class AttendanceService {
     private final EnrollmentRepository enrollmentRepository;
     private final UserRepository userRepository;
     private final AttendanceMapper attendanceMapper;
+    private final NotificationService notificationService;
 
     public AttendanceService(AttendanceRepository attendanceRepository,
                              EnrollmentRepository enrollmentRepository,
                              UserRepository userRepository,
-                             AttendanceMapper attendanceMapper) {
+                             AttendanceMapper attendanceMapper,
+                             NotificationService notificationService) {
         this.attendanceRepository = attendanceRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.userRepository = userRepository;
         this.attendanceMapper = attendanceMapper;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -48,6 +56,15 @@ public class AttendanceService {
             throw new BusinessRuleException(ErrorCode.ATTENDANCE_INACTIVE_ENROLLMENT);
         }
 
+        SecurityUser principal = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .map(auth -> (SecurityUser) auth.getPrincipal())
+                .orElse(null);
+
+        if (principal != null && principal.role() == UserRole.TEACHER
+                && !enrollmentRepository.existsByIdAndSectionHomeroomTeacherId(request.enrollmentId(), principal.userId())) {
+            throw new AccessDeniedException("No eres el tutor de esta sección");
+        }
+
         AttendanceRecord record = attendanceRepository
                 .findByEnrollmentIdAndDate(request.enrollmentId(), request.date())
                 .orElse(new AttendanceRecord());
@@ -57,12 +74,29 @@ public class AttendanceService {
         record.setStatus(request.status());
         record.setNote(request.note());
 
-        Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
-                .map(auth -> (SecurityUser) auth.getPrincipal())
-                .flatMap(su -> userRepository.findById(su.userId()))
-                .ifPresent(record::setRegisteredBy);
+        if (principal != null) {
+            userRepository.findById(principal.userId()).ifPresent(record::setRegisteredBy);
+        }
 
-        return attendanceMapper.toResponse(attendanceRepository.save(record));
+        AttendanceRecord saved = attendanceRepository.save(record);
+        if (saved.getStatus() == AttendanceStatus.ABSENT) {
+            notifyGuardianOfAbsence(enrollment, saved);
+        }
+        return attendanceMapper.toResponse(saved);
+    }
+
+    // Only ABSENT triggers a notification — PRESENT/LATE/JUSTIFIED aren't worth interrupting a
+    // parent for. Best-effort, same reasoning as InvoiceService.notifyGuardianOfOverdueInvoice.
+    private void notifyGuardianOfAbsence(Enrollment enrollment, AttendanceRecord record) {
+        Family family = enrollment.getStudent().getFamily();
+        if (family == null || family.getGuardianUser() == null) return;
+        notificationService.notify(
+                family.getGuardianUser().getId(),
+                NotificationType.ABSENCE_RECORDED,
+                "Falta registrada",
+                "%s tiene una falta registrada el %s.".formatted(
+                        enrollment.getStudent().fullName(), record.getDate()),
+                enrollment.getStudent().getId());
     }
 
     public List<AttendanceResponse> findByEnrollment(Long enrollmentId) {

@@ -45,6 +45,7 @@ public class SubjectController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<List<SubjectResponse>>> findAll(
             @RequestParam(required = false) Long gradeLevelId) {
         List<Subject> result = gradeLevelId != null
@@ -54,6 +55,7 @@ public class SubjectController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<SubjectResponse>> findById(@PathVariable Long id) {
         Subject subject = subjectRepository.findByIdWithGradeLevel(id)
                 .orElseThrow(() -> new EntityNotFoundException("Subject", id));

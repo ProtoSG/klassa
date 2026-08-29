@@ -39,6 +39,38 @@ public class SecurityConfig {
             "/api-docs/**"
     };
 
+    /**
+     * CSRF strategy:
+     *
+     * The JWT cookie is set with `SameSite=Lax` + `path=/api` (see
+     * `AuthController#buildCookie`). `SameSite=Lax` already blocks the browser
+     * from sending the cookie on cross-origin POST/PUT/PATCH/DELETE — that's
+     * the primary defense against CSRF and is what OWASP recommends for
+     * SPAs that rely on cookie auth + state-changing APIs.
+     *
+     * CSRF tokens (double-submit cookie pattern) are intentionally NOT
+     * enabled here because the frontend and backend run on different origins
+     * (`localhost:3000` vs `localhost:8080`). The CSRF token would be set on
+     * the backend's domain and never reach the frontend's Server Actions,
+     * which would break every state-changing request. The two viable paths
+     * to enable CSRF later are:
+     *   1. Proxy `/api/*` through Next.js so the app is same-origin, then
+     *      re-enable the block below and wire the frontend `csrf.ts` helper.
+     *   2. Set `SameSite=None; Secure` on the CSRF cookie (kills the dev
+     *      experience — `Secure` requires HTTPS).
+     *
+     * When the JWT cookie is rotated to `SameSite=Strict` (or when the app
+     * becomes same-origin), revisit this and re-enable CSRF.
+     */
+    /*
+    private static final String[] CSRF_EXEMPT_PATHS = {
+            "/api/auth/login",
+            "/api/auth/change-password",
+            "/api/auth/logout",
+            "/api/platform/auth/login"
+    };
+    */
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter,
             CorsConfigurationSource corsConfigurationSource) throws Exception {

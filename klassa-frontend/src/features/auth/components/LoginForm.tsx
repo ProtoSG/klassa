@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useEffect, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -33,6 +33,14 @@ export default function LoginForm() {
     },
   })
 
+  useEffect(() => {
+    const blocked = params.get('blocked')
+    if (blocked) {
+      form.setError('root', { message: blocked })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   function onSubmit(values: LoginInput) {
     startTransition(async () => {
       try {
@@ -49,7 +57,7 @@ export default function LoginForm() {
         }
 
         setSession(result.user, values.subdomain)
-        router.push('/dashboard')
+        router.push(result.user.role === 'PARENT' ? '/portal' : '/dashboard')
       } catch (err) {
         form.setError('root', {
           message: err instanceof Error ? err.message : 'Error al iniciar sesión',
@@ -104,7 +112,7 @@ export default function LoginForm() {
         />
 
         {form.formState.errors.root && (
-          <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+          <p className="text-sm text-danger bg-danger/10 border border-danger/30 rounded-xl px-4 py-2.5">
             {form.formState.errors.root.message}
           </p>
         )}

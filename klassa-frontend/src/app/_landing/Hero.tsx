@@ -143,7 +143,7 @@ export default function Hero() {
               <p className="text-xs text-ghost">colegio-san-martin</p>
             </div>
             <span className="ml-auto inline-flex items-center gap-1 bg-accent/30 text-ink/70 text-xs px-2 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              <span className="w-1.5 h-1.5 rounded-full bg-ink/50" />
               Activo
             </span>
           </div>

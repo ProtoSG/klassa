@@ -28,11 +28,14 @@ public class JwtService {
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.expiration}") long expirationMs,
             Environment environment) {
-        boolean isProdLike = Arrays.stream(environment.getActiveProfiles())
-                .anyMatch(p -> p.equalsIgnoreCase("prod") || p.equalsIgnoreCase("production"));
-        if (isProdLike && DEFAULT_DEV_SECRET.equals(secret)) {
+        // Allowlist known-safe local profiles instead of blocklisting "prod" —
+        // any unset/unrecognized profile (staging, qa, a typo'd prod alias) must
+        // never silently sign tokens with a publicly-known secret.
+        boolean isDevLike = Arrays.stream(environment.getActiveProfiles())
+                .anyMatch(p -> p.equalsIgnoreCase("dev") || p.equalsIgnoreCase("local") || p.equalsIgnoreCase("test"));
+        if (!isDevLike && DEFAULT_DEV_SECRET.equals(secret)) {
             throw new IllegalStateException(
-                    "JWT_SECRET must be set to a strong value in production; the dev default is not allowed.");
+                    "JWT_SECRET must be set to a strong value outside dev/local/test profiles; the dev default is not allowed.");
         }
         // hmacShaKeyFor already enforces >= 256 bits for HS256.
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));

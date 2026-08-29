@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { redirect } from 'next/navigation'
 import SessionInitializer from '@/shared/components/SessionInitializer'
+import PlatformUserMenu from '@/features/platform/components/PlatformUserMenu'
+import { Toaster } from '@/components/ui/sonner'
 import { getPlatformMe } from '@/features/auth/actions'
 
 export default async function PlatformAdminLayout({ children }: { children: ReactNode }) {
@@ -17,9 +19,11 @@ export default async function PlatformAdminLayout({ children }: { children: Reac
             </div>
             <span className="font-medium text-ink">Klassa Platform</span>
           </div>
+          <PlatformUserMenu />
         </div>
       </header>
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">{children}</main>
+      <Toaster richColors position="bottom-center" />
     </div>
   )
 }

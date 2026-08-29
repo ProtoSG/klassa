@@ -12,5 +12,6 @@ public record TenantResponse(
         Long planId,
         String planName,
         LocalDateTime trialEndsAt,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        LocalDateTime purgedAt
 ) {}

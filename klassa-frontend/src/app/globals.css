@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme inline {
   --color-accent: rgb(216, 249, 184);
@@ -10,6 +11,8 @@
   --color-ghost: rgb(140, 140, 140);
   --color-line: rgb(230, 230, 230);
   --color-trim: rgb(216, 213, 209);
+  --color-danger: rgb(196, 87, 68);
+  --color-warning: rgb(196, 146, 71);
   --color-background: rgb(243, 242, 241);
   --color-foreground: rgb(43, 45, 45);
   --font-sans: 'Inter', system-ui, sans-serif;

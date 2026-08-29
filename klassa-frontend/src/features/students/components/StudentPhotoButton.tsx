@@ -4,8 +4,7 @@ import { useRef, useTransition, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Camera } from 'lucide-react'
 import { toast } from 'sonner'
-import { useSession } from '@/shared/store/session'
-import { COOKIE_NAME } from '@/shared/lib/constants'
+import { uploadStudentPhoto } from '../actions'
 
 interface Props {
   studentId: number
@@ -13,14 +12,14 @@ interface Props {
   firstName: string
   lastName: string
   photoUrl?: string | null
+  canManage: boolean
 }
 
-export default function StudentPhotoButton({ studentId, fullName, firstName, lastName, photoUrl }: Props) {
+export default function StudentPhotoButton({ studentId, fullName, firstName, lastName, photoUrl, canManage }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isPending, startTransition] = useTransition()
   const [preview, setPreview] = useState<string | null>(null)
   const router = useRouter()
-  const subdomain = useSession((s) => s.subdomain)
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -40,20 +39,7 @@ export default function StudentPhotoButton({ studentId, fullName, firstName, las
         const fd = new FormData()
         fd.append('file', file)
 
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/students/${studentId}/photo`,
-          {
-            method: 'PATCH',
-            credentials: 'include',
-            headers: subdomain ? { 'X-Tenant-Subdomain': subdomain } : {},
-            body: fd,
-          }
-        )
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => null)
-          throw new Error(err?.message ?? `Error ${res.status}`)
-        }
+        await uploadStudentPhoto(studentId, fd)
 
         toast.success('Foto actualizada')
         router.refresh()
@@ -68,6 +54,18 @@ export default function StudentPhotoButton({ studentId, fullName, firstName, las
   }
 
   const src = preview ?? photoUrl
+
+  if (!canManage) {
+    return (
+      <div className="relative w-12 h-12 rounded-full bg-muted-fill flex items-center justify-center shrink-0 text-sm font-medium text-prose overflow-hidden">
+        {src ? (
+          <img src={src} alt={fullName} className="w-12 h-12 rounded-full object-cover" />
+        ) : (
+          <span>{firstName[0]}{lastName[0]}</span>
+        )}
+      </div>
+    )
+  }
 
   return (
     <button

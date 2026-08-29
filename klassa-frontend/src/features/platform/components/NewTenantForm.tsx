@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Check, Copy } from 'lucide-react'
+import { toast } from 'sonner'
 import { newTenantSchema, type NewTenantInput } from '../schemas'
 import { createTenant } from '../actions'
 import type { Plan, TenantProvisionResponse } from '../types'
@@ -26,6 +28,15 @@ export default function NewTenantForm({ plans }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [result, setResult] = useState<TenantProvisionResponse | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  async function handleCopyPassword() {
+    if (!result) return
+    await navigator.clipboard.writeText(result.tempPassword)
+    setCopied(true)
+    toast.success('Contraseña copiada')
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const form = useForm<NewTenantInput>({
     resolver: zodResolver(newTenantSchema),
@@ -59,7 +70,7 @@ export default function NewTenantForm({ plans }: Props) {
   if (result) {
     return (
       <div className="flex flex-col gap-6">
-        <div className="rounded-2xl border border-accent bg-accent/20 p-6">
+        <div>
           <h2 className="font-medium text-ink text-lg mb-1">
             Colegio creado exitosamente
           </h2>
@@ -74,9 +85,19 @@ export default function NewTenantForm({ plans }: Props) {
               {result.tenant.subdomain}
             </code>
             <p className="text-sm text-ghost mt-2">Contraseña temporal del admin</p>
-            <code className="text-lg font-mono bg-ink text-accent rounded-xl px-4 py-2.5 tracking-widest w-fit">
-              {result.tempPassword}
-            </code>
+            <div className="flex items-center gap-2">
+              <code className="text-lg font-mono bg-ink text-accent rounded-xl px-4 py-2.5 tracking-widest w-fit">
+                {result.tempPassword}
+              </code>
+              <button
+                type="button"
+                onClick={handleCopyPassword}
+                aria-label="Copiar contraseña"
+                className="p-2.5 rounded-xl border border-line bg-white text-ink hover:bg-surface transition-colors duration-150"
+              >
+                {copied ? <Check size={16} className="text-accent" /> : <Copy size={16} />}
+              </button>
+            </div>
           </div>
         </div>
         <Button variant="outline" onClick={() => router.push('/platform/dashboard')}>
@@ -132,7 +153,7 @@ export default function NewTenantForm({ plans }: Props) {
                   >
                     {plans.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name}
+                        {p.name} — S/ {p.priceMonthly.toLocaleString('es-PE', { minimumFractionDigits: 0 })}/mes — hasta {p.maxStudents.toLocaleString('es-PE')} alumnos
                       </option>
                     ))}
                   </select>
@@ -214,7 +235,7 @@ export default function NewTenantForm({ plans }: Props) {
         </div>
 
         {form.formState.errors.root && (
-          <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+          <p className="text-sm text-danger bg-danger/10 border border-danger/30 rounded-xl px-4 py-2.5">
             {form.formState.errors.root.message}
           </p>
         )}

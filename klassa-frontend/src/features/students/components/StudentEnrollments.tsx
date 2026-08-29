@@ -11,7 +11,7 @@ import type { EnrollmentResponse, EnrollmentStatus } from '../types'
 const STATUS_STYLE: Record<EnrollmentStatus, string> = {
   ACTIVE: 'bg-accent/30 text-ink/80',
   WITHDRAWN: 'bg-muted-fill text-prose',
-  TRANSFERRED: 'bg-amber-100 text-amber-700',
+  TRANSFERRED: 'bg-warning/15 text-warning',
 }
 
 const STATUS_LABEL: Record<EnrollmentStatus, string> = {
@@ -26,9 +26,10 @@ function fmtDate(iso: string) {
 
 interface Props {
   enrollments: EnrollmentResponse[]
+  canManage: boolean
 }
 
-export default function StudentEnrollments({ enrollments: initial }: Props) {
+export default function StudentEnrollments({ enrollments: initial, canManage }: Props) {
   const [enrollments, setEnrollments] = useState(initial)
   const [transferTarget, setTransferTarget] = useState<EnrollmentResponse | null>(null)
 
@@ -68,10 +69,10 @@ export default function StudentEnrollments({ enrollments: initial }: Props) {
                     </span>
                   </TableCell>
                   <TableCell>
-                    {e.status === 'ACTIVE' && (
+                    {canManage && e.status === 'ACTIVE' && (
                       <button
                         onClick={() => setTransferTarget(e)}
-                        className="p-1.5 rounded-lg text-ghost hover:text-amber-600 hover:bg-amber-50 transition-colors duration-150"
+                        className="p-1.5 rounded-lg text-ghost hover:text-warning hover:bg-warning/10 transition-colors duration-150"
                         title="Trasladar a otra sección"
                       >
                         <ArrowRightLeft size={14} />

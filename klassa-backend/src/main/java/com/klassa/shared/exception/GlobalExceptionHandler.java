@@ -1,5 +1,6 @@
 package com.klassa.shared.exception;
 
+import com.klassa.assistant.LlmUnavailableException;
 import com.klassa.shared.storage.StorageException;
 import com.klassa.shared.web.ApiResponse;
 import org.slf4j.Logger;
@@ -95,6 +96,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
                 .body(ApiResponse.error("El archivo supera el tamaño máximo permitido de 5 MB", 413));
+    }
+
+    @ExceptionHandler(LlmUnavailableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleLlmUnavailable(LlmUnavailableException ex) {
+        log.warn("LLM provider unavailable", ex);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiResponse.error(ErrorCode.ASSISTANT_UNAVAILABLE.name(),
+                        "El asistente no está disponible en este momento, intenta más tarde.", 503));
     }
 
     @ExceptionHandler(Exception.class)

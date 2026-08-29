@@ -16,5 +16,9 @@ public record StudentResponse(
         StudentStatus status,
         Long familyId,
         String guardianName,
+        /** Populated from {@code student.family.guardianPhone} when the student has a family.
+         *  Used by the billing screen's "recordar pago por WhatsApp" action and the
+         *  attendance screen's "notificar ausentes" panel. */
+        String guardianPhone,
         String photoUrl
 ) {}

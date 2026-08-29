@@ -9,6 +9,7 @@ export interface TenantResponse {
   planName: string
   trialEndsAt: string | null
   createdAt: string
+  purgedAt: string | null
 }
 
 export interface Plan {

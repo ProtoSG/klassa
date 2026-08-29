@@ -40,6 +40,7 @@ public class GradeLevelController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<List<GradeLevelResponse>>> findAll(
             @RequestParam(required = false) GradeLevelType level) {
         List<GradeLevel> result = level != null
@@ -49,6 +50,7 @@ public class GradeLevelController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<GradeLevelResponse>> findById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(
                 toResponse(gradeLevelRepository.findById(id)
@@ -68,6 +70,7 @@ public class GradeLevelController {
     }
 
     @GetMapping("/grouped")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<Map<GradeLevelType, List<GradeLevelResponse>>>> grouped() {
         Map<GradeLevelType, List<GradeLevelResponse>> grouped = gradeLevelRepository
                 .findAllByOrderBySortOrderAsc().stream()

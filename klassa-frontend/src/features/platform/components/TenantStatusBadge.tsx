@@ -1,9 +1,9 @@
 import type { TenantStatus } from '../types'
 
 const styles: Record<TenantStatus, string> = {
-  TRIAL: 'bg-amber-100 text-amber-700',
+  TRIAL: 'bg-warning/15 text-warning',
   ACTIVE: 'bg-accent/40 text-ink/80',
-  SUSPENDED: 'bg-red-100 text-red-600',
+  SUSPENDED: 'bg-danger/15 text-danger',
   CANCELLED: 'bg-muted-fill text-prose',
 }
 

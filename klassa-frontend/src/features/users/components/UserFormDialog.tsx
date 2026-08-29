@@ -52,12 +52,12 @@ export default function UserFormDialog({ open, onClose, onSaved, user }: Props) 
   }, [open, user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function onSubmit(values: FormValues) {
-    if (!isEdit && values.password.length < 6) {
-      form.setError('password', { message: 'Mín. 6 caracteres' })
+    if (!isEdit && values.password.length < 8) {
+      form.setError('password', { message: 'Mín. 8 caracteres' })
       return
     }
-    if (isEdit && values.password !== '' && values.password.length < 6) {
-      form.setError('password', { message: 'Mín. 6 caracteres' })
+    if (isEdit && values.password !== '' && values.password.length < 8) {
+      form.setError('password', { message: 'Mín. 8 caracteres' })
       return
     }
 
@@ -144,7 +144,7 @@ export default function UserFormDialog({ open, onClose, onSaved, user }: Props) 
               <FormControl>
                 <Input
                   type="password"
-                  placeholder={isEdit ? '••••••' : 'Mín. 6 caracteres'}
+                  placeholder={isEdit ? '••••••' : 'Mín. 8 caracteres'}
                   autoComplete="new-password"
                   {...field}
                 />

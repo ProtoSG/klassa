@@ -6,6 +6,8 @@ import { History } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import Pagination from '@/shared/components/Pagination'
+import WhatsAppButton from '@/shared/components/WhatsAppButton'
+import { templates } from '@/shared/lib/whatsapp'
 import InvoiceStatusBadge from './InvoiceStatusBadge'
 import RegisterPaymentDialog from './RegisterPaymentDialog'
 import PaymentHistoryDialog from './PaymentHistoryDialog'
@@ -161,7 +163,7 @@ export default function InvoicesSection({ students }: Props) {
             {pendingBalance !== null && (
               <div className="text-right">
                 <p className="text-xs text-ghost">Saldo pendiente</p>
-                <p className={`text-lg font-semibold ${pendingBalance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                <p className={`text-lg font-semibold ${pendingBalance > 0 ? 'text-danger' : 'text-ink'}`}>
                   S/ {pendingBalance.toFixed(2)}
                 </p>
               </div>
@@ -216,8 +218,8 @@ export default function InvoicesSection({ students }: Props) {
                       <TableCell className="text-xs text-ghost font-mono">{inv.invoiceNumber}</TableCell>
                       <TableCell className="text-sm text-ink font-medium">{inv.concept}</TableCell>
                       <TableCell className="text-sm text-prose">S/ {inv.amount}</TableCell>
-                      <TableCell className="text-sm text-emerald-600">S/ {inv.paidAmount}</TableCell>
-                      <TableCell className="text-sm text-red-600">S/ {inv.pendingAmount}</TableCell>
+                      <TableCell className="text-sm text-ink">S/ {inv.paidAmount}</TableCell>
+                      <TableCell className="text-sm text-danger">S/ {inv.pendingAmount}</TableCell>
                       <TableCell className="text-sm text-prose">{inv.dueDate}</TableCell>
                       <TableCell><InvoiceStatusBadge status={inv.status} /></TableCell>
                       <TableCell>
@@ -237,10 +239,25 @@ export default function InvoicesSection({ students }: Props) {
                               Pagar
                             </button>
                           )}
+                          {(inv.status === 'OVERDUE' || inv.status === 'PENDING') && selectedStudent?.guardianPhone && (
+                            <WhatsAppButton
+                              phone={selectedStudent.guardianPhone}
+                              variant="icon"
+                              label={`Recordar pago de ${inv.concept} por WhatsApp`}
+                              text={templates.paymentReminder({
+                                guardianName: selectedStudent.guardianName ?? '',
+                                studentName: selectedStudent.fullName,
+                                concept: inv.concept,
+                                dueDate: inv.dueDate,
+                                pendingAmount: inv.pendingAmount,
+                                invoiceNumber: inv.invoiceNumber,
+                              })}
+                            />
+                          )}
                           {inv.status !== 'CANCELLED' && inv.status !== 'PAID' && (
                             <button
                               onClick={() => setCancelTarget(inv)}
-                              className="px-2.5 py-1 text-xs font-medium rounded-lg border border-line text-ghost hover:text-red-500 hover:border-red-200 transition-colors duration-150"
+                              className="px-2.5 py-1 text-xs font-medium rounded-lg border border-line text-ghost hover:text-danger hover:border-danger/30 transition-colors duration-150"
                             >
                               Anular
                             </button>
