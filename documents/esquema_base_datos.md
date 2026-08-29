@@ -5,7 +5,7 @@
 | Motor | PostgreSQL 16 |
 | Estrategia | Multi-tenant **schema-per-tenant** |
 | Migraciones | Flyway (`db/migration` = platform, `db/tenant` = colegio) |
-| Versión doc | 1.0 — 2026-06-25 |
+| Versión doc | 1.1 — 2026-08-16 |
 
 ---
 
@@ -22,16 +22,21 @@ PostgreSQL (instancia única)
     ├── users
     ├── families
     ├── students
+    ├── student_code_counters   ← contador por año para `students.code`
     ├── academic_years
     ├── grade_levels
     ├── sections
     ├── subjects
+    ├── teaching_assignments    ← carga docente (docente ↔ sección ↔ materia)
     ├── enrollments
     ├── scores
     ├── attendance_records
+    ├── calendar_events         ← calendario escolar (exámenes, feriados, reuniones)
     ├── fee_schedules
     ├── invoices
-    └── payments
+    ├── payments
+    ├── notifications           ← notificaciones in-app por usuario
+    └── ai_usage_counters       ← contador mensual de mensajes al asistente IA
 ```
 
 **Convención de auditoría** (presente en casi todas las tablas, vía `BaseEntity` + triggers):
@@ -53,7 +58,7 @@ Catálogo de planes comerciales del SaaS.
 | name | VARCHAR(100) | Starter / Pro / Enterprise |
 | max_students | INT | tope de alumnos del plan |
 | price_monthly | DECIMAL(10,2) | precio mensual USD |
-| features | JSONB | `{"modules": [...]}` |
+| features | JSONB | `{"modules": [...], "aiMessagesPerMonth": 100\|400\|2000}` |
 | active | BOOLEAN | default TRUE |
 | auditoría | — | índice `idx_plans_active` |
 
@@ -69,6 +74,7 @@ Cada colegio registrado.
 | plan_id | BIGINT FK → plans.id | |
 | trial_ends_at | TIMESTAMPTZ | fin del periodo de prueba |
 | created_at | TIMESTAMPTZ | |
+| purged_at* | TIMESTAMPTZ | NULL hasta que un admin purge el schema (`V10`) |
 | auditoría | — | índices `idx_tenants_subdomain`, `idx_tenants_status` |
 
 ### 2.3 `platform_users`
@@ -99,6 +105,7 @@ enrollment_status = ('ACTIVE', 'WITHDRAWN', 'TRANSFERRED')
 attendance_status = ('PRESENT', 'ABSENT', 'LATE', 'JUSTIFIED')
 invoice_status    = ('PENDING', 'PAID', 'OVERDUE', 'PARTIAL', 'CANCELLED')
 payment_method    = ('CASH', 'TRANSFER', 'CARD', 'YAPE', 'PLIN')
+calendar_event_type = ('EXAM', 'HOLIDAY', 'PARENT_TEACHER_MEETING', 'GRADING_DEADLINE', 'SCHOOL_ACTIVITY')
 ```
 
 ### 3.2 Tablas
@@ -122,6 +129,7 @@ payment_method    = ('CASH', 'TRANSFER', 'CARD', 'YAPE', 'PLIN')
 | guardian_email / guardian_phone | VARCHAR |
 | address | TEXT |
 | emergency_contact / emergency_phone | VARCHAR |
+| guardian_user_id* | BIGINT FK → users.id | cuenta del apoderado para login parental (`V11`) |
 
 #### `students` — alumnos
 | Columna | Tipo | Notas |
@@ -236,7 +244,53 @@ payment_method    = ('CASH', 'TRANSFER', 'CARD', 'YAPE', 'PLIN')
 | registered_by | BIGINT FK → users.id | |
 | notes | TEXT | |
 
-\* Columnas añadidas en migraciones posteriores (`V7` must_change_password, `V8` invoice version).
+#### `student_code_counters` — contador atómico para `students.code`
+| Columna | Tipo | Notas |
+|---|---|---|
+| year | INT PK | año lectivo |
+| last_seq | INT | default 0; incrementado por `fn_next_student_code()` |
+
+> Genera códigos tipo `2026-0001` de forma concurrente-safe por colegio.
+
+#### `teaching_assignments` — carga docente (docente ↔ sección ↔ materia)
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | BIGINT PK | |
+| section_id | BIGINT FK → sections.id | |
+| subject_id | BIGINT FK → subjects.id | |
+| teacher_id | BIGINT FK → users.id | |
+| | | **UNIQUE (section_id, subject_id)** — un docente por materia/sección |
+
+#### `calendar_events` — calendario escolar
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | BIGINT PK | |
+| title | VARCHAR(200) | |
+| description | TEXT | nullable |
+| start_date / end_date | DATE | check `end_date >= start_date` |
+| type | calendar_event_type | examen, feriado, reunión, cierre de notas, actividad |
+
+#### `notifications` — notificaciones in-app
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | BIGSERIAL PK | |
+| recipient_user_id | BIGINT FK → users.id | destinatario |
+| type | VARCHAR(40) | ej. `INVOICE_OVERDUE`, `STAGE_PUBLISHED` |
+| title | VARCHAR(200) | |
+| message | VARCHAR(500) | |
+| student_id | BIGINT FK → students.id | nullable — contexto del alumno |
+| read_flag | BOOLEAN | default FALSE |
+| auditoría | — | índice `idx_notifications_recipient (recipient_user_id, read_flag, date_created DESC)` |
+
+> La home del portal de padres hace fetch "no leídas, más recientes" en cada carga.
+
+#### `ai_usage_counters` — cuotas del asistente IA
+| Columna | Tipo | Notas |
+|---|---|---|
+| year_month | VARCHAR(7) PK | formato `YYYY-MM` |
+| message_count | INT | default 0; comparado contra `plans.features.aiMessagesPerMonth` |
+
+\* Columnas añadidas en migraciones posteriores (`V7` must_change_password, `V8` invoice version, `V10` tenant purged_at, `V11` family.guardian_user_id, `V11` plans.features.aiMessagesPerMonth).
 
 ---
 
@@ -249,9 +303,18 @@ families ──< students ──< enrollments >── sections >── grade_lev
                                  ├──< scores >── subjects ───┘
                                  └──< attendance_records
 
+sections ──< teaching_assignments >── subjects
+sections ──< teaching_assignments >── users (teacher)
+users ──< notifications
+students ──< notifications (contexto)
+
 academic_years ──< fee_schedules
 students ──< invoices ──< payments
-users ── (homeroom_teacher / created_by / registered_by)
+student_code_counters (helper, sin FK)
+ai_usage_counters (helper, sin FK)
+calendar_events (autónoma)
+
+users ── (homeroom_teacher / created_by / registered_by / teacher / guardian_user_id)
 ```
 
 Leyenda: `A ──< B` = uno-a-muchos (A es padre), `>──` = muchos-a-uno hacia el padre.
@@ -278,8 +341,8 @@ Leyenda: `A ──< B` = uno-a-muchos (A es padre), `>──` = muchos-a-uno hac
 
 | Carpeta | Versiones | Contenido |
 |---|---|---|
-| `db/migration` (platform) | V1–V9 | Schema platform, tablas globales, funciones/procedimientos, platform_users (V8), seed de planes (V9) |
-| `db/tenant` (por colegio) | V1–V8 | Tablas base (V1), índices (V2), check constraints (V3), audit triggers (V4), funciones (V5), procedimientos (V6), `must_change_password` (V7), `invoice.version` (V8) |
+| `db/migration` (platform) | V1–V11 | Schema platform, tablas globales, funciones/procedimientos, platform_users (V8), seed de planes (V9), `tenants.purged_at` (V10), `plans.features.aiMessagesPerMonth` (V11) |
+| `db/tenant` (por colegio) | V1–V15 | Tablas base (V1), índices (V2), check constraints (V3), audit triggers (V4), funciones (V5), procedimientos (V6), `must_change_password` (V7), `invoice.version` (V8), unique constraints (V9), `student_code_counters` (V10), `families.guardian_user_id` (V11), `teaching_assignments` (V12), `calendar_events` (V13), `ai_usage_counters` (V14), `notifications` (V15) |
 
 > Las migraciones de `db/tenant` se aplican sobre cada schema de colegio en el momento de
 > la provisión y en cada despliegue que cambie su estructura.

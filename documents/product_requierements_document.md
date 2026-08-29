@@ -3,9 +3,9 @@
 | Campo | Valor |
 |---|---|
 | Producto | **Klassa** — SaaS ERP escolar multi-tenant |
-| Versión doc | 1.0 |
-| Fecha | 2026-06-25 |
-| Estado | En desarrollo (MVP funcional) |
+| Versión doc | 1.1 |
+| Fecha | 2026-08-16 |
+| Estado | MVP funcional + portal_parent, calendario, carga docente, notificaciones, asistente IA |
 | Owner | Equipo Klassa |
 
 ---
@@ -51,11 +51,11 @@ El sistema tiene **dos planos de identidad**: usuarios de plataforma y usuarios 
 | `ADMIN` | Director / coordinador | Todo dentro del colegio: usuarios, años académicos, grados, secciones, alumnos, matrícula, asistencia, notas, cobranza |
 | `TEACHER` | Docente | Alumnos (lectura), asistencia, registro de notas de sus secciones |
 | `TREASURER` | Tesorería | Esquemas de cobro, generación de facturas, registro de pagos |
-| `PARENT` | Apoderado | (Rol previsto) consulta de notas, asistencia y estado de cuenta de sus hijos |
+| `PARENT` | Apoderado | Consulta de notas, asistencia, estado de cuenta y calendario de sus hijos a través del portal `/portal` |
 
 > **Estado actual:** la navegación del frontend habilita módulos para `ADMIN`,
-> `TEACHER` y `TREASURER`. El rol `PARENT` está modelado en BD y JWT pero su
-> portal aún no está implementado (ver Roadmap §9).
+> `TEACHER`, `TREASURER` y `PARENT`. El portal de apoderados está implementado
+> (`app/(parent)/portal/`) y restringido al núcleo familiar del usuario.
 
 ## 4. Alcance del MVP
 
@@ -71,14 +71,19 @@ El sistema tiene **dos planos de identidad**: usuarios de plataforma y usuarios 
 - **Asistencia:** registro diario por estado (presente/ausente/tarde/justificado) y % de asistencia.
 - **Calificaciones:** notas 0–20 por materia y periodo (1–4), una nota por enrollment/materia/periodo.
 - **Cobranza:** esquemas de cobro (pensiones), generación masiva de facturas, registro de pagos multi-método (efectivo, transferencia, tarjeta, Yape, Plin), cálculo de estado (PENDING/PAID/PARTIAL/OVERDUE/CANCELLED) y job nocturno de morosidad.
+- **Carga docente** (`teaching_assignments`): asignación de docente a sección/materia (un docente por materia/sección).
+- **Calendario escolar** (`calendar_events`): exámenes, feriados, reuniones de apoderados, cierre de notas y actividades, con rango de fechas y tipo enumerado.
+- **Notificaciones in-app** (`notifications`): feed por usuario; la home del portal de padres muestra las no leídas más recientes.
+- **Asistente IA** (`assistant`): chat con herramientas (function-calling) para consultar datos del colegio; cuota mensual controlada por `plans.features.aiMessagesPerMonth` (Starter 100, Pro 400, Enterprise 2000) y contadores en `ai_usage_counters`.
+- **Portal de apoderados (PARENT)** en `/portal` con vistas de notas, asistencia, pagos y calendario, restringido al núcleo familiar.
 - **Landing page** comercial (marketing del SaaS).
 
 ### 4.2 Fuera de alcance (MVP)
 
-- Portal de apoderados (PARENT).
 - Cobro en línea / pasarela de pago real (los pagos se registran manualmente).
-- Reportes/analítica avanzada (incluidos en planes Pro/Enterprise como feature flag, sin UI aún).
-- Horarios de clase, mensajería interna, biblioteca, transporte.
+- Reportes/analítica avanzada (incluidos en planes Pro/Enterprise como feature flag, sin UI aún — ver `plan_implementacion_modulo_reportes.md`).
+- Horarios de clase (slots por día/hora), mensajería interna, biblioteca, transporte.
+- Notificaciones por email/WhatsApp (solo feed in-app por ahora).
 - App móvil nativa (la UI web es responsive con navegación inferior tipo móvil).
 
 ## 5. Requisitos funcionales
@@ -116,6 +121,29 @@ El sistema tiene **dos planos de identidad**: usuarios de plataforma y usuarios 
 - RF-6.4 Job nocturno (00:05) marca como OVERDUE las facturas vencidas no pagadas.
 - RF-6.5 Las facturas usan numeración única y bloqueo optimista (versión) para evitar doble pago.
 
+### RF-7 — Carga docente
+- RF-7.1 Un docente se asigna a una combinación única (sección, materia); no se duplica la asignación.
+- RF-7.2 La consulta por docente devuelve sus secciones y materias vigentes.
+
+### RF-8 — Calendario escolar
+- RF-8.1 Eventos con rango de fechas (`start_date` ≤ `end_date`) y tipo del enum `calendar_event_type`.
+- RF-8.2 Visibles para todo el colegio; en el portal de padres, filtrados por fechas relevantes.
+
+### RF-9 — Notificaciones
+- RF-9.1 Un usuario recibe notificaciones in-app asociadas opcionalmente a un alumno.
+- RF-9.2 La home del portal de padres lista no leídas más recientes (`read_flag=false`, `date_created DESC`).
+- RF-9.3 El destinatario es `users.id`; el tipo (`type VARCHAR(40)`) es abierto para que cada emisor defina su semántica (p.ej. `INVOICE_OVERDUE`, `STAGE_PUBLISHED`).
+
+### RF-10 — Portal de apoderados (PARENT)
+- RF-10.1 Un usuario PARENT ve únicamente datos de los `students` cuyo `family_id` está asociado a su `users.id` vía `families.guardian_user_id`.
+- RF-10.2 Vistas: notas por hijo, % de asistencia, facturas pendientes/pagadas, calendario.
+- RF-10.3 Si ninguna familia está asociada, muestra estado vacío (`FamilyNotLinkedState`) en lugar de fallar.
+
+### RF-11 — Asistente IA
+- RF-11.1 El colegio accede al asistente vía `POST /api/assistant/chat` con cuota mensual definida en `plans.features.aiMessagesPerMonth`.
+- RF-11.2 El contador en `ai_usage_counters` se incrementa por mensaje; cuando excede la cuota, el endpoint responde `429 QUOTA_EXCEEDED`.
+- RF-11.3 El asistente expone herramientas (function-calling) que solo consultan datos del tenant actual (aislamiento respetado).
+
 ## 6. Requisitos no funcionales
 
 | Categoría | Requisito |
@@ -148,12 +176,12 @@ El sistema tiene **dos planos de identidad**: usuarios de plataforma y usuarios 
 
 ## 9. Roadmap (post-MVP)
 
-1. **Portal de apoderados (PARENT):** consulta de notas, asistencia y estado de cuenta.
-2. **Pasarela de pago** (Yape/Plin/tarjeta en línea) con conciliación automática.
-3. **Reportes y analítica** (libreta de notas PDF, reporte de morosidad, dashboards).
-4. **Horarios y carga docente.**
-5. **Notificaciones** (email/WhatsApp) de pagos y ausencias.
-6. **Enforcement de cuotas por plan** y facturación del SaaS a los colegios.
+1. **Pasarela de pago** (Yape/Plin/tarjeta en línea) con conciliación automática.
+2. **Reportes y analítica** (libreta de notas PDF, reporte de morosidad, dashboards).
+3. **Horarios de clase** (slots por día/hora) — la carga docente (RF-7) ya está implementada.
+4. **Notificaciones outbound** (email/WhatsApp) de pagos y ausencias — feed in-app (RF-9) ya está.
+5. **Enforcement de cuotas por plan** y `max_students` (BR-1) — actualmente sin enforcement backend.
+6. **Facturación del SaaS** a los colegios (cobro de la suscripción).
 
 ## 10. Documentos relacionados
 

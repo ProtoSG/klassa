@@ -52,8 +52,6 @@ Definidos en `globals.css` con `@theme inline` (consumibles como `bg-*`, `text-*
 --color-ghost:       rgb(140, 140, 140);  /* captions, microcopy */
 --color-line:        rgb(230, 230, 230);  /* bordes de card */
 --color-trim:        rgb(216, 213, 209);  /* bordes de botón */
---color-danger:      rgb(196, 87, 68);    /* terracota cálido — errores, saldo pendiente, acciones destructivas */
---color-warning:     rgb(196, 146, 71);   /* ocre cálido — estados de alerta (ej. trasladado) */
 --color-background:  rgb(243, 242, 241);  /* alias de canvas (shadcn) */
 --color-foreground:  rgb(43, 45, 45);     /* alias de ink (shadcn) */
 ```
@@ -70,16 +68,10 @@ Definidos en `globals.css` con `@theme inline` (consumibles como `bg-*`, `text-*
 | line | `border-line` | bordes de card |
 | trim | `border-trim` | bordes de botón secundario |
 | white | `bg-white` | relleno de cards |
-| danger | `text-danger` / `bg-danger` | error, saldo pendiente, acciones destructivas |
-| warning | `text-warning` / `bg-warning` | estados de alerta no destructivos (ej. trasladado) |
 
 > El acento es intencionalmente pastel. Re-skinear a otro pastel (durazno, lavanda,
 > amarillo cálido) cambia el ánimo manteniendo la personalidad. `canvas` cálido es
 > esencial — no usar blanco puro ni gris frío como fondo.
->
-> `danger`/`warning` son los **únicos** colores semánticos permitidos fuera del acento
-> — para estado (activo/inactivo) seguir usando `accent`/`muted-fill`, nunca verde/ámbar
-> sueltos de Tailwind (`red-500`, `amber-100`, etc.).
 
 ### 3.2 Tipografía
 
