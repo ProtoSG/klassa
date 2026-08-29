@@ -5,10 +5,13 @@ import com.klassa.academic.EnrollmentRepository;
 import com.klassa.attendance.dto.AttendancePercentageResponse;
 import com.klassa.attendance.dto.AttendanceRequest;
 import com.klassa.attendance.dto.AttendanceResponse;
+import com.klassa.notification.NotificationService;
+import com.klassa.notification.NotificationType;
 import com.klassa.shared.exception.BusinessRuleException;
 import com.klassa.shared.exception.ErrorCode;
 import com.klassa.shared.exception.EntityNotFoundException;
 import com.klassa.shared.security.SecurityUser;
+import com.klassa.student.Family;
 import com.klassa.user.UserRepository;
 import com.klassa.user.UserRole;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,15 +33,18 @@ public class AttendanceService {
     private final EnrollmentRepository enrollmentRepository;
     private final UserRepository userRepository;
     private final AttendanceMapper attendanceMapper;
+    private final NotificationService notificationService;
 
     public AttendanceService(AttendanceRepository attendanceRepository,
                              EnrollmentRepository enrollmentRepository,
                              UserRepository userRepository,
-                             AttendanceMapper attendanceMapper) {
+                             AttendanceMapper attendanceMapper,
+                             NotificationService notificationService) {
         this.attendanceRepository = attendanceRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.userRepository = userRepository;
         this.attendanceMapper = attendanceMapper;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -72,7 +78,25 @@ public class AttendanceService {
             userRepository.findById(principal.userId()).ifPresent(record::setRegisteredBy);
         }
 
-        return attendanceMapper.toResponse(attendanceRepository.save(record));
+        AttendanceRecord saved = attendanceRepository.save(record);
+        if (saved.getStatus() == AttendanceStatus.ABSENT) {
+            notifyGuardianOfAbsence(enrollment, saved);
+        }
+        return attendanceMapper.toResponse(saved);
+    }
+
+    // Only ABSENT triggers a notification — PRESENT/LATE/JUSTIFIED aren't worth interrupting a
+    // parent for. Best-effort, same reasoning as InvoiceService.notifyGuardianOfOverdueInvoice.
+    private void notifyGuardianOfAbsence(Enrollment enrollment, AttendanceRecord record) {
+        Family family = enrollment.getStudent().getFamily();
+        if (family == null || family.getGuardianUser() == null) return;
+        notificationService.notify(
+                family.getGuardianUser().getId(),
+                NotificationType.ABSENCE_RECORDED,
+                "Falta registrada",
+                "%s tiene una falta registrada el %s.".formatted(
+                        enrollment.getStudent().fullName(), record.getDate()),
+                enrollment.getStudent().getId());
     }
 
     public List<AttendanceResponse> findByEnrollment(Long enrollmentId) {
